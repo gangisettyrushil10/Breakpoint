@@ -65,9 +65,13 @@ class BreakingPoint(BaseModel):
     triggered: bool
     monthIndex: int | None = None
     shockCombination: list[str] = []
+    overageCents: int | None = None
 
 
-def _triggers_severe_risk(profile: FinancialProfile, schedule: Schedule, months: int) -> int | None:
+def _triggers_severe_risk(
+    profile: FinancialProfile, schedule: Schedule, months: int
+) -> tuple[int, int] | None:
+    """Returns (monthIndex, overageCents) for the first month severe risk hits, or None."""
     start = MonthState(
         cashCents=profile.savings.liquidCents,
         creditCardBalanceCents=profile.debt.creditCardBalanceCents,
@@ -75,8 +79,9 @@ def _triggers_severe_risk(profile: FinancialProfile, schedule: Schedule, months:
     result = run_months(profile, start, months, schedule)
 
     for month_result in result.months:
-        if month_result.state.creditCardBalanceCents > profile.debt.availableCreditCents:
-            return month_result.monthIndex
+        overage = month_result.state.creditCardBalanceCents - profile.debt.availableCreditCents
+        if overage > 0:
+            return month_result.monthIndex, overage
 
     return None
 
@@ -97,13 +102,15 @@ def find_breaking_point(
         for combo in combinations(candidate_scenarios, stack_size):
             names = [name for name, _ in combo]
             merged = merge_schedules(*(schedule for _, schedule in combo))
-            triggered_month = _triggers_severe_risk(profile, merged, months)
+            trigger = _triggers_severe_risk(profile, merged, months)
 
-            if triggered_month is not None:
+            if trigger is not None:
+                triggered_month, overage = trigger
                 return BreakingPoint(
                     triggered=True,
                     monthIndex=triggered_month,
                     shockCombination=names,
+                    overageCents=overage,
                 )
 
     return BreakingPoint(triggered=False)

@@ -79,6 +79,7 @@ flowchart TD
     Scenarios["scenario library\ncar_repair · rent_hike · layoff\n(named, reusable, stackable via merge_schedules)"]
     Score["compute_resilience_score()\n0-100, weighted from runway / buffer / credit headroom"]
     Breaking["find_breaking_point()\nsearches stacked scenario combinations\nfor the smallest one that triggers severe risk"]
+    Prevention["build_prevention_plan()\nclosed-form: exact extra savings or\nmonthly cut that would have avoided it"]
 
     Profile --> Baseline --> Monthly
     Monthly --> Runner
@@ -86,9 +87,12 @@ flowchart TD
     Runner --> Score
     Runner --> Breaking
     Scenarios --> Breaking
+    Breaking --> Prevention
 ```
 
 **Worked example** — a $4,350/month take-home with $3,250 in monthly expenses has a $1,100 buffer. Run a `layoff` scenario (income → $0) for two months: month 1 drains savings and pushes the rest onto the credit card, month 2 goes fully to the credit card, month 3 (income restored) starts recovering. `find_breaking_point()` runs exactly this kind of search across combinations of presets — single shocks first, then pairs, then triples — until it finds one where the credit-card balance exceeds available credit (essentials can no longer be covered), or reports that the budget survived everything tried.
+
+Once a breaking point is found, `build_prevention_plan()` answers "what would have prevented this" with two closed-form numbers derived from the exact dollar amount the credit balance overshot available credit by: the extra starting savings that would have absorbed it, and the permanent monthly spending cut (spread across the months leading up to the break) that would have absorbed it instead — capped against a feasibility check against actual discretionary + subscription spending, so it never recommends cutting more than the person actually spends. If the person's credit balance was already over their limit *before* any shock, the plan says so plainly instead of pretending savings could fix it — this engine never repays existing debt, so no future savings amount can undo a limit that's already blown.
 
 ## Core concepts
 
@@ -103,6 +107,7 @@ flowchart TD
 | **Severe risk** | A month where even available credit can't cover the deficit |
 | **Breaking point** | The smallest realistic combination of shocks that triggers severe risk |
 | **Resilience score** | An explainable 0–100 score built from three weighted formulas — not a model's guess |
+| **Prevention plan** | The exact extra savings or monthly cut that would have avoided a breaking point — closed-form, not a guess |
 | **Deterministic** | Same inputs always produce the same outputs |
 
 ## Repo layout
@@ -148,10 +153,11 @@ Phase 1 (deterministic simulator, no LLM yet) — see [ARCHITECTURE.md](ARCHITEC
 | 6 | Resilience score + breaking-point search | ✅ Done |
 | 7 | `POST /simulate` HTTP endpoint | ✅ Done |
 | 8 | `GET /health` | ✅ Done |
-| 9 | Next.js intake form + dashboard | ⬜ Not started |
-| 10 | LLM explanation layer | ⬜ Not started (Phase 2, deliberately deferred) |
+| 9 | Prevention/recommendation engine (extra savings, monthly cut) | ✅ Done |
+| 10 | Next.js intake form + dashboard | ⬜ Not started |
+| 11 | LLM explanation layer | ⬜ Not started (Phase 2, deliberately deferred) |
 
-**Phase 1 complete end-to-end.** 33 automated tests, all passing — profile validation, baseline math, single-month simulation, the multi-month runner, every scenario preset (individually and stacked), the resilience score formula, the breaking-point search, and the `/simulate` HTTP route itself (via FastAPI's `TestClient`).
+**Phase 1 complete end-to-end, plus a prevention layer beyond the original scope.** 37 automated tests, all passing — profile validation, baseline math, single-month simulation, the multi-month runner, every scenario preset (individually and stacked), the resilience score formula, the breaking-point search, the prevention engine (proven by re-simulating with its own recommendations applied), and the `/simulate` HTTP route itself (via FastAPI's `TestClient`).
 
 ## Running it locally
 

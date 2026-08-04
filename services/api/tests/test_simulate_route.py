@@ -57,7 +57,13 @@ def test_simulate_with_no_scenarios_returns_full_shape() -> None:
 
     assert response.status_code == 200
     data = response.json()
-    assert set(data.keys()) == {"baseline", "resilience", "simulation", "breakingPoint"}
+    assert set(data.keys()) == {
+        "baseline",
+        "resilience",
+        "simulation",
+        "breakingPoint",
+        "preventionPlan",
+    }
     assert data["baseline"]["totalExpensesCents"] == 325_000
     assert len(data["simulation"]["months"]) == 3
     assert "score" in data["resilience"]

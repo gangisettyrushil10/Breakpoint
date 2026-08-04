@@ -6,6 +6,7 @@ from app.domain.financial_profile import FinancialProfile
 from app.scenarios.library import SCENARIO_PRESETS, merge_schedules
 from app.simulation.baseline import BaselineResult, compute_baseline
 from app.simulation.monthly import MonthState
+from app.simulation.prevention import PreventionPlan, build_prevention_plan
 from app.simulation.runner import SimulationResult, run_months
 from app.simulation.scoring import (
     BreakingPoint,
@@ -37,6 +38,7 @@ class SimulateResponse(BaseModel):
     resilience: ResilienceScore
     simulation: SimulationResult
     breakingPoint: BreakingPoint
+    preventionPlan: PreventionPlan | None
 
 
 @router.post("/simulate", response_model=SimulateResponse)
@@ -60,10 +62,12 @@ def simulate(request: SimulateRequest) -> SimulateResponse:
         (name, preset(months)) for name, preset in SCENARIO_PRESETS.items()
     ]
     breaking_point = find_breaking_point(profile, months, breaking_point_candidates)
+    prevention_plan = build_prevention_plan(profile, breaking_point)
 
     return SimulateResponse(
         baseline=baseline,
         resilience=resilience,
         simulation=simulation,
         breakingPoint=breaking_point,
+        preventionPlan=prevention_plan,
     )
