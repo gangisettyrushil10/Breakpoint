@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 
 from app.routes.health import router as health_router
+from app.routes.simulate import router as simulate_router
 
 app = FastAPI(
     title="BreakPoint API",
@@ -9,3 +10,4 @@ app = FastAPI(
 )
 
 app.include_router(health_router)
+app.include_router(simulate_router)

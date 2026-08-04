@@ -1,3 +1,5 @@
+from typing import Callable
+
 from app.simulation.runner import MonthlyAdjustments
 from app.simulation.shocks import Shock
 
@@ -40,6 +42,30 @@ def layoff(
         month: MonthlyAdjustments(incomeOverrideCents=replacement_income_cents)
         for month in range(start_month, start_month + duration_months)
     }
+
+
+def _default_car_repair(months: int) -> Schedule:
+    return car_repair(month_index=months // 2)
+
+
+def _default_medical_bill(months: int) -> Schedule:
+    return medical_bill(month_index=months // 2)
+
+
+def _default_rent_hike(months: int) -> Schedule:
+    return rent_hike(start_month=1, duration_months=max(months - 1, 1), increase_cents=20_000)
+
+
+def _default_layoff(months: int) -> Schedule:
+    return layoff(start_month=0, duration_months=min(2, months), replacement_income_cents=0)
+
+
+SCENARIO_PRESETS: dict[str, Callable[[int], Schedule]] = {
+    "car_repair": _default_car_repair,
+    "medical_bill": _default_medical_bill,
+    "rent_hike": _default_rent_hike,
+    "layoff": _default_layoff,
+}
 
 
 def merge_schedules(*schedules: Schedule) -> Schedule:

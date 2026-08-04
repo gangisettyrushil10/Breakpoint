@@ -146,12 +146,12 @@ Phase 1 (deterministic simulator, no LLM yet) — see [ARCHITECTURE.md](ARCHITEC
 | 4 | Multi-month runner | ✅ Done |
 | 5 | Scenario library (car repair, rent hike, layoff) | ✅ Done |
 | 6 | Resilience score + breaking-point search | ✅ Done |
-| 7 | `POST /simulate` HTTP endpoint | ⬜ Not started |
+| 7 | `POST /simulate` HTTP endpoint | ✅ Done |
 | 8 | `GET /health` | ✅ Done |
 | 9 | Next.js intake form + dashboard | ⬜ Not started |
 | 10 | LLM explanation layer | ⬜ Not started (Phase 2, deliberately deferred) |
 
-**28 automated tests, all passing**, covering profile validation, baseline math, single-month simulation, the multi-month runner, every scenario preset (individually and stacked), the resilience score formula, and the breaking-point search.
+**Phase 1 complete end-to-end.** 33 automated tests, all passing — profile validation, baseline math, single-month simulation, the multi-month runner, every scenario preset (individually and stacked), the resilience score formula, the breaking-point search, and the `/simulate` HTTP route itself (via FastAPI's `TestClient`).
 
 ## Running it locally
 
@@ -190,8 +190,7 @@ The full reasoning — why Python over a TypeScript-only stack, why money is sto
 
 ## Roadmap
 
-1. **`POST /simulate`** — wire the runner, scenario library, and scoring to an HTTP endpoint.
-2. **Next.js intake + dashboard** — a real form calling the API, rendering score/runway/breaking point.
-3. **Phase 2 — Agent layer** — a conversational LLM that asks intake questions and explains *already-computed* results in plain English. It never invents the numbers.
-4. **Phase 3 — Real data** — HUD Fair Market Rents / FRED context, optional Plaid connection.
-5. **Phase 4 — Stickiness** — score history, "what changed" alerts, heavier modeling only if the product pulls for it.
+1. **Next.js intake + dashboard** — a real form calling the API, rendering score/runway/breaking point.
+2. **Phase 2 — Agent layer** — a conversational LLM that asks intake questions and explains *already-computed* results in plain English. It never invents the numbers.
+3. **Phase 3 — Real data** — HUD Fair Market Rents / FRED context, optional Plaid connection.
+4. **Phase 4 — Stickiness** — score history, "what changed" alerts, heavier modeling only if the product pulls for it.
