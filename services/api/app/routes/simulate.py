@@ -1,9 +1,10 @@
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, model_validator
 
 from fastapi import APIRouter
 
 from app.domain.financial_profile import FinancialProfile
 from app.scenarios.library import SCENARIO_PRESETS, merge_schedules
+from app.scenarios.schema import ScenarioInput, resolve_scenario, scenario_last_month
 from app.simulation.baseline import BaselineResult, compute_baseline
 from app.simulation.monthly import MonthState
 from app.simulation.prevention import PreventionPlan, build_prevention_plan
@@ -21,16 +22,21 @@ router = APIRouter(tags=["simulate"])
 class SimulateRequest(BaseModel):
     profile: FinancialProfile
     months: int = Field(default=6, ge=1, le=12)
-    scenarios: list[str] = Field(default_factory=list)
+    scenarios: list[ScenarioInput] = Field(default_factory=list)
 
-    @field_validator("scenarios")
-    @classmethod
-    def scenarios_must_be_known(cls, value: list[str]) -> list[str]:
-        unknown = [name for name in value if name not in SCENARIO_PRESETS]
-        if unknown:
-            known = sorted(SCENARIO_PRESETS)
-            raise ValueError(f"unknown scenario(s) {unknown}; choose from {known}")
-        return value
+    @model_validator(mode="after")
+    def scenarios_must_fit_within_months(self) -> "SimulateRequest":
+        out_of_range = [
+            scenario
+            for scenario in self.scenarios
+            if scenario_last_month(scenario) >= self.months
+        ]
+        if out_of_range:
+            raise ValueError(
+                f"{len(out_of_range)} scenario(s) extend past months={self.months}; "
+                "every scenario's month index must be < months"
+            )
+        return self
 
 
 class SimulateResponse(BaseModel):
@@ -49,7 +55,10 @@ def simulate(request: SimulateRequest) -> SimulateResponse:
     baseline = compute_baseline(profile)
     resilience = compute_resilience_score(profile)
 
-    named_schedules = [(name, SCENARIO_PRESETS[name](months)) for name in request.scenarios]
+    named_schedules = [
+        (f"{scenario.type}#{i}", resolve_scenario(scenario))
+        for i, scenario in enumerate(request.scenarios)
+    ]
     combined_schedule = merge_schedules(*(schedule for _, schedule in named_schedules))
 
     start = MonthState(

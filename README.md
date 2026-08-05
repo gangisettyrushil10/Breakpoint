@@ -94,6 +94,8 @@ flowchart TD
 
 Once a breaking point is found, `build_prevention_plan()` answers "what would have prevented this" with two closed-form numbers derived from the exact dollar amount the credit balance overshot available credit by: the extra starting savings that would have absorbed it, and the permanent monthly spending cut (spread across the months leading up to the break) that would have absorbed it instead — capped against a feasibility check against actual discretionary + subscription spending, so it never recommends cutting more than the person actually spends. If the person's credit balance was already over their limit *before* any shock, the plan says so plainly instead of pretending savings could fix it — this engine never repays existing debt, so no future savings amount can undo a limit that's already blown.
 
+**Scenarios are parameterized, not fixed presets.** `POST /simulate` takes a `scenarios` array of typed objects (`app/scenarios/schema.py`), each with its own amount and timing — a $340 rent hike starting next month is a different request from the default $200 one, not a different preset name. A `custom_shock` type is the escape hatch for anything that isn't a named preset at all (a pet emergency, a one-time fine): `{"type": "custom_shock", "monthIndex": 2, "name": "pet_emergency", "costCents": 40000}`. This is deliberately the same structured shape Phase 2's LLM layer will eventually populate from free text — "my rent just went up $340" becomes this JSON instead of a hardcoded preset pick, without the engine itself changing at all.
+
 ## Core concepts
 
 | Term | Meaning |
