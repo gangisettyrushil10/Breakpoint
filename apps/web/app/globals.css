@@ -1,26 +1,111 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/*
+  BreakPoint design tokens — "calm crisis control".
+  Dark-first. Status color is reserved for genuine risk state and never
+  used decoratively; the categorical series palette below is separate and
+  validated for colorblind-safe separation against the charcoal surface.
+*/
+@theme {
+  /* grounds */
+  --color-bg: #0b0d0f;
+  --color-surface-1: #12151a;
+  --color-surface-2: #181c22;
+  --color-surface-3: #1f242c;
+  --color-line: #242a33;
+  --color-line-strong: #333b47;
+
+  /* ink */
+  --color-ink: #f2efe9;
+  --color-ink-2: #a8aeb8;
+  --color-ink-3: #6b7480;
+
+  /* status — reserved, always paired with a label */
+  --color-stable: #4ea88a;
+  --color-stable-dim: #16241f;
+  --color-caution: #d9a441;
+  --color-caution-dim: #241d10;
+  --color-critical: #e5705f;
+  --color-critical-dim: #251413;
+
+  /* simulation accent */
+  --color-accent: #6e8fe8;
+  --color-accent-dim: #141a2b;
+
+  /* categorical series — validated (CVD-safe on #0b0d0f) */
+  --color-series-1: #4c82e2;
+  --color-series-2: #b87b45;
+  --color-series-3: #25aa92;
+  --color-series-4: #9e4c86;
+
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", Menlo, monospace;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  color-scheme: dark;
+  background: var(--color-bg);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Every figure in this product is a measurement — lock the digits. */
+.tnum {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+.label {
+  font-size: 0.6875rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--color-ink-3);
+}
+
+/* Fault-line motif: a hairline contour used to separate pressure zones. */
+.faultline {
+  background-image: repeating-linear-gradient(
+    90deg,
+    var(--color-line-strong) 0px,
+    var(--color-line-strong) 3px,
+    transparent 3px,
+    transparent 7px
+  );
+  height: 1px;
+}
+
+*:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+@keyframes bp-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.rise {
+  animation: bp-rise 0.5s cubic-bezier(0.2, 0.7, 0.3, 1) both;
 }
