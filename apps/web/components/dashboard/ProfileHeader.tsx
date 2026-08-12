@@ -45,11 +45,19 @@ export function ProfileHeader() {
         </div>
 
         <div className="order-last flex flex-wrap gap-2 sm:order-0">
+          {/* Until there are real numbers to look at, entering them is the only
+              thing worth doing on this page — so it is the only button that
+              looks like a button. Styling it identically to "Account" is what
+              made it invisible. */}
           <Link
             href="/intake"
-            className="rounded-lg border border-line bg-surface-1 px-3.5 py-2 text-[13px] text-ink-2 hover:border-line-strong hover:text-ink"
+            className={
+              hasOwnProfile
+                ? "rounded-lg border border-line bg-surface-1 px-3.5 py-2 text-[13px] text-ink-2 hover:border-line-strong hover:text-ink"
+                : "rounded-lg bg-accent px-3.5 py-2 text-[13px] font-medium text-bg transition-opacity hover:opacity-90"
+            }
           >
-            {hasOwnProfile ? "Edit numbers" : "Use my numbers"}
+            {hasOwnProfile ? "Edit numbers" : "Enter your numbers"}
           </Link>
           <Link
             href="/chat"

@@ -3,6 +3,7 @@
 import { Section } from "@/components/ui/primitives";
 import { DashboardProvider } from "@/components/dashboard/DashboardProvider";
 import { ProfileHeader } from "@/components/dashboard/ProfileHeader";
+import { DemoNotice } from "@/components/dashboard/DemoNotice";
 import { ResilienceVerdict } from "@/components/dashboard/ResilienceVerdict";
 import { SurvivalTimeline } from "@/components/dashboard/SurvivalTimeline";
 import { ShockBuilder } from "@/components/dashboard/ShockBuilder";
@@ -19,6 +20,7 @@ export default function Home() {
   return (
     <DashboardProvider>
       <ProfileHeader />
+      <DemoNotice />
 
       <main className="mx-auto flex w-full max-w-6xl flex-col gap-16 px-5 py-10 sm:px-8 sm:py-14">
         <Section
