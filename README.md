@@ -83,7 +83,7 @@ Don't invent numbers — you'll usually land somewhere boring. Type **these** in
 |---|---|
 | Monthly take-home | `4120.00` |
 
-**Monthly expenses**
+**What goes out each month**
 
 | Field | Value |
 |---|---|
@@ -94,13 +94,13 @@ Don't invent numbers — you'll usually land somewhere boring. Type **these** in
 | Insurance | `165.00` |
 | Other essential | `80.00` |
 | Subscriptions | `65.00` |
-| Discretionary | `310.00` |
+| Spending money | `310.00` |
 
-**Debt and credit**
+**Debt and credit cards**
 
 | Field | Value |
 |---|---|
-| Monthly debt minimums | `260.00` |
+| Smallest payment you must make each month | `260.00` |
 | Credit card balance | `2850.00` |
 | Available credit | `5500.00` — enter your **total credit line** here, see [Known issues](#known-issues) |
 | Credit card APR | `24.99` |
@@ -109,7 +109,7 @@ Don't invent numbers — you'll usually land somewhere boring. Type **these** in
 
 | Field | Value |
 |---|---|
-| Liquid savings | `3400.00` |
+| Savings you could reach this week | `3400.00` |
 
 ---
 
