@@ -15,6 +15,7 @@
  */
 
 import type { FinancialProfile, JobStability, PayFrequency } from "@/lib/api/types";
+import type { GlossaryKey } from "@/lib/glossary";
 
 /** A dotted path into the profile, e.g. `expenses.rentCents`. */
 export type DraftKey = string;
@@ -27,6 +28,8 @@ export interface MoneyField {
   hint?: string;
   /** Money must be > 0 rather than >= 0 (income is the only one). */
   positive?: boolean;
+  /** Makes the label clickable, revealing a plain-language definition. */
+  explain?: GlossaryKey;
 }
 
 export interface FieldGroup {
@@ -53,8 +56,8 @@ export const MONEY_GROUPS: FieldGroup[] = [
   },
   {
     id: "expenses",
-    title: "Monthly expenses",
-    lede: "The engine treats rent, utilities, insurance and debt minimums as fixed, and subscriptions and discretionary as cuttable.",
+    title: "What goes out each month",
+    lede: "Rough monthly amounts are fine. Rent, utilities, insurance and debt payments are treated as bills you cannot skip; subscriptions and spending money are treated as things you could stop quickly if you had to.",
     money: [
       { key: "expenses.rentCents", label: "Rent or mortgage" },
       { key: "expenses.utilitiesCents", label: "Utilities" },
@@ -65,38 +68,53 @@ export const MONEY_GROUPS: FieldGroup[] = [
       {
         key: "expenses.subscriptionsCents",
         label: "Subscriptions",
-        hint: "Counted as cuttable in the prevention plan.",
+        hint: "Streaming, gym, apps — things you could cancel.",
+        explain: "cuttable",
       },
       {
         key: "expenses.discretionaryCents",
-        label: "Discretionary",
-        hint: "Also counted as cuttable.",
+        label: "Spending money",
+        hint: "Eating out, going out, shopping.",
+        explain: "cuttable",
       },
     ],
   },
   {
     id: "debt",
-    title: "Debt and credit",
-    lede: "Credit delays a breaking point rather than preventing one, so the limit matters as much as the balance.",
+    title: "Debt and credit cards",
+    lede: "A credit card keeps the bills paid for a while after your savings are gone, so how much room is left on it matters as much as what you already owe.",
     money: [
       {
         key: "debt.minimumPaymentsCents",
-        label: "Monthly debt minimums",
-        hint: "These keep running even when income stops.",
+        label: "Smallest payment you must make each month",
+        hint: "Across all your debts. These keep coming even if your pay stops.",
+        explain: "debtMinimums",
       },
-      { key: "debt.creditCardBalanceCents", label: "Credit card balance" },
+      {
+        key: "debt.creditCardBalanceCents",
+        label: "Credit card balance",
+        hint: "What you currently owe on it.",
+      },
       {
         key: "debt.availableCreditCents",
         label: "Available credit",
-        hint: "How much you could still draw, not the total limit.",
+        hint: "How much the card could still cover in an emergency.",
+        explain: "availableCredit",
       },
     ],
   },
   {
     id: "savings",
     title: "Savings",
-    lede: "Only money you could actually reach this week. Retirement accounts don't count.",
-    money: [{ key: "savings.liquidCents", label: "Liquid savings" }],
+    lede: "Only money you could actually get at this week. A pension or retirement account does not count, because it will not help you on a bad Tuesday.",
+    money: [
+      {
+        key: "savings.liquidCents",
+        label: "Savings you could reach this week",
+        hint: "Current account, savings account, cash.",
+        explain: "liquidSavings",
+      },
+    ],
   },
 ];
 

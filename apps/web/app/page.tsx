@@ -23,8 +23,8 @@ export default function Home() {
       <main className="mx-auto flex w-full max-w-6xl flex-col gap-16 px-5 py-10 sm:px-8 sm:py-14">
         <Section
           index="01"
-          eyebrow="The verdict"
-          title="What this budget can withstand"
+          eyebrow="The short answer"
+          title="How much bad luck can your money take?"
           id="verdict"
         >
           <ResilienceVerdict />
@@ -32,9 +32,9 @@ export default function Home() {
 
         <Section
           index="02"
-          eyebrow="Survival timeline"
-          title="Where it holds, and where it gives"
-          lede="Cash and credit are tracked separately — credit delays the failure, it does not prevent it. Both exhaustion points are marked."
+          eyebrow="Month by month"
+          title="When things would start to go wrong"
+          lede="Savings and credit are shown separately, because they run out at different times. A credit card keeps the bills paid for a while after the savings are gone — it buys you time, it does not make you safe."
           id="timeline"
         >
           <SurvivalTimeline />
@@ -42,9 +42,9 @@ export default function Home() {
 
         <Section
           index="03"
-          eyebrow="Shock builder"
-          title="Stack the emergencies"
-          lede="Toggle shocks to re-run the live Python engine. Ordering follows how often US households report each class of expense."
+          eyebrow="Try it yourself"
+          title="What if these things happened?"
+          lede="Turn on the setbacks you want to test and everything on this page is worked out again. They are listed roughly in the order US households actually report them."
           id="shocks"
         >
           <ShockBuilder />
@@ -52,9 +52,9 @@ export default function Home() {
 
         <Section
           index="04"
-          eyebrow="Why it breaks"
-          title="Single shocks vs stacked shocks"
-          lede="Charts below are driven by POST /simulate — including pairwise compound runs for the matrix."
+          eyebrow="The reason"
+          title="One setback, or several at once"
+          lede="A single piece of bad luck is usually survivable. The same setbacks landing close together often are not, because the first one uses up the savings that would have absorbed the second."
           id="why"
         >
           <div className="flex flex-col gap-4">
@@ -72,9 +72,9 @@ export default function Home() {
 
         <Section
           index="05"
-          eyebrow="How to improve"
-          title="What actually moves the breaking point"
-          lede="Prevention levers come from the deterministic overage when severe risk triggers."
+          eyebrow="What would help"
+          title="What would actually have made a difference"
+          lede="Two ways out, both worked out from exactly how far past the limit things went: money saved up beforehand, or spending stopped each month. If the amount you would need to cut is more than you could realistically cut, we say so instead of pretending."
           id="improve"
         >
           <RecoveryComparison />
@@ -82,9 +82,9 @@ export default function Home() {
 
         <Section
           index="06"
-          eyebrow="Show your work"
-          title="Every number, traceable"
-          lede="The simulation is deterministic. If you disagree with an assumption, change it and the whole page changes with it."
+          eyebrow="Our workings"
+          title="Where every number came from"
+          lede="Nothing here is guessed or generated. If you disagree with something we assumed, change it and the whole page is worked out again."
           id="assumptions"
         >
           <AssumptionsPanel />

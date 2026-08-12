@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 import type { RiskState } from "@/lib/mock/profile";
+import { Explain } from "@/components/ui/Explain";
+import type { GlossaryKey } from "@/lib/glossary";
 
 export function Section({
   index,
@@ -86,11 +88,14 @@ export function Stat({
   label,
   tone = "default",
   hint,
+  explain,
 }: {
   value: string;
   label: string;
   tone?: "default" | "stable" | "caution" | "critical";
   hint?: string;
+  /** Makes the label clickable, revealing a plain-language definition. */
+  explain?: GlossaryKey;
 }) {
   const toneClass = {
     default: "text-ink",
@@ -102,7 +107,9 @@ export function Stat({
   return (
     <div>
       <div className={`tnum text-[26px] leading-none font-medium ${toneClass}`}>{value}</div>
-      <div className="mt-1.5 text-[13px] text-ink-2">{label}</div>
+      <div className="mt-1.5 text-[13px] text-ink-2">
+        {explain ? <Explain term={explain}>{label}</Explain> : label}
+      </div>
       {hint ? <div className="mt-0.5 text-[11.5px] text-ink-3">{hint}</div> : null}
     </div>
   );

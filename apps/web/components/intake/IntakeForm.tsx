@@ -4,7 +4,9 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useProfile } from "@/components/ProfileProvider";
 import { Card } from "@/components/ui/primitives";
+import { ExplainList } from "@/components/ui/Explain";
 import { defaultProfile } from "@/lib/api/mappers";
+import type { GlossaryKey } from "@/lib/glossary";
 import {
   JOB_STABILITIES,
   MONEY_GROUPS,
@@ -134,6 +136,7 @@ function IntakeFormFields() {
                 id={field.key}
                 label={field.label}
                 hint={field.hint}
+                explain={field.explain}
                 value={draft[field.key] ?? ""}
                 error={errors[field.key]}
                 onChange={(v) => set(field.key, v)}
@@ -215,16 +218,20 @@ function FieldShell({
   label,
   hint,
   error,
+  explain,
   children,
 }: {
   id: string;
   label: string;
   hint?: string;
   error?: string;
+  explain?: GlossaryKey;
   children: React.ReactNode;
 }) {
   return (
     <div className="min-w-0">
+      {/* The explainer sits below rather than beside the label: a <details>
+          inside a <label> would swallow the click that should focus the input. */}
       <label htmlFor={id} className="block text-[13px] text-ink-2">
         {label}
       </label>
@@ -238,6 +245,13 @@ function FieldShell({
           {hint}
         </p>
       ) : null}
+      {explain ? (
+        <ExplainList
+          className="mt-1.5 text-[12px]"
+          label="What counts here?"
+          terms={[explain]}
+        />
+      ) : null}
     </div>
   );
 }
@@ -248,6 +262,7 @@ function MoneyInput({
   hint,
   value,
   error,
+  explain,
   onChange,
 }: {
   id: string;
@@ -255,10 +270,11 @@ function MoneyInput({
   hint?: string;
   value: string;
   error?: string;
+  explain?: GlossaryKey;
   onChange: (value: string) => void;
 }) {
   return (
-    <FieldShell id={id} label={label} hint={hint} error={error}>
+    <FieldShell id={id} label={label} hint={hint} error={error} explain={explain}>
       <div className="relative">
         <span
           aria-hidden
