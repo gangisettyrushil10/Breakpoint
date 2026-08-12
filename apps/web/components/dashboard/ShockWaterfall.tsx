@@ -1,22 +1,27 @@
+"use client";
+
 import { Card, CardTitle } from "@/components/ui/primitives";
 import { money } from "@/lib/format";
-import { waterfall } from "@/lib/mock/profile";
-
-/*
-  Horizontal rather than the usual vertical waterfall: the labels are long,
-  and the running total is the point — the reader should watch capacity build
-  and then get consumed, ending below zero.
-*/
-const SCALE = Math.max(...waterfall.map((s) => Math.abs(s.amountCents)));
+import { useDashboard } from "@/components/dashboard/DashboardProvider";
 
 export function ShockWaterfall() {
+  const { waterfall } = useDashboard();
   let running = 0;
+  const SCALE = Math.max(1, ...waterfall.map((s) => Math.abs(s.amountCents)));
+
+  if (waterfall.length === 0) {
+    return (
+      <Card padded>
+        <p className="text-[14px] text-ink-3">Waterfall builds after the live run returns.</p>
+      </Card>
+    );
+  }
 
   return (
     <Card padded={false}>
       <div className="p-5 pb-0">
         <CardTitle
-          aside={<span className="text-[11.5px] text-ink-3">Across 5 crisis months</span>}
+          aside={<span className="text-[11.5px] text-ink-3">From this simulation</span>}
         >
           Where the buffer went
         </CardTitle>
@@ -74,18 +79,15 @@ export function ShockWaterfall() {
                 {!isResult ? (
                   <div className="tnum mt-0.5 text-[11px] text-ink-3">{money(running)}</div>
                 ) : (
-                  <div className="mt-0.5 text-[11px] text-ink-3">unpaid</div>
+                  <div className="mt-0.5 text-[11px] text-ink-3">
+                    {isResult && step.amountCents < 0 ? "overage" : "end"}
+                  </div>
                 )}
               </div>
             </div>
           );
         })}
       </div>
-
-      <p className="border-t border-line px-5 py-3 text-[12.5px] text-ink-3">
-        Available credit is shown as a resource because it delays the failure — but it is
-        borrowed, and the shortfall is what remains after it is fully drawn.
-      </p>
     </Card>
   );
 }

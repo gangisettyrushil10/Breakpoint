@@ -1,17 +1,13 @@
-import { Card, CardTitle } from "@/components/ui/primitives";
-import { compoundMatrix, shockNames } from "@/lib/mock/profile";
+"use client";
 
-/*
-  Sequential encoding: one hue, darker = sooner failure. Survivable pairs get
-  a neutral surface rather than a hue step, so "no break" never reads as a
-  severity level.
-*/
+import { Card, CardTitle } from "@/components/ui/primitives";
+import { useDashboard } from "@/components/dashboard/DashboardProvider";
+
 function cellStyle(value: number | null) {
   if (value === null) {
     return { background: "var(--color-surface-2)", color: "var(--color-ink-3)" };
   }
-  // 6.3 (worst) → 7.0 (best) across the observed range
-  const t = Math.min(Math.max((7.0 - value) / 0.7, 0), 1);
+  const t = Math.min(Math.max((12 - value) / 12, 0), 1);
   return {
     background: `color-mix(in oklab, var(--color-critical) ${18 + t * 46}%, var(--color-surface-1))`,
     color: "var(--color-ink)",
@@ -19,10 +15,18 @@ function cellStyle(value: number | null) {
 }
 
 export function CompoundMatrix() {
+  const { compoundShockNames, compoundMatrix, comparisonLoading } = useDashboard();
+
   return (
     <Card padded={false}>
       <div className="p-5 pb-0">
-        <CardTitle aside={<span className="text-[11.5px] text-ink-3">Months to a missed payment</span>}>
+        <CardTitle
+          aside={
+            <span className="text-[11.5px] text-ink-3">
+              {comparisonLoading ? "Computing…" : "Live pair sims"}
+            </span>
+          }
+        >
           Which pairs break you
         </CardTitle>
       </div>
@@ -30,12 +34,12 @@ export function CompoundMatrix() {
       <div className="overflow-x-auto px-5 pb-1">
         <table className="w-full min-w-[440px] border-separate border-spacing-[2px]">
           <caption className="sr-only">
-            Months until a required payment is missed for each pair of stacked shocks.
+            Month index of severe risk for each pair of stacked shocks from the live API.
           </caption>
           <thead>
             <tr>
               <th scope="col" className="w-[112px]" />
-              {shockNames.map((name) => (
+              {compoundShockNames.map((name) => (
                 <th
                   key={name}
                   scope="col"
@@ -48,12 +52,12 @@ export function CompoundMatrix() {
           </thead>
           <tbody>
             {compoundMatrix.map((row, i) => (
-              <tr key={shockNames[i]}>
+              <tr key={compoundShockNames[i]}>
                 <th
                   scope="row"
                   className="pr-2 text-right text-[12px] font-normal text-ink-2"
                 >
-                  {shockNames[i]}
+                  {compoundShockNames[i]}
                 </th>
                 {row.map((value, j) => {
                   const isDiagonal = i === j;
@@ -72,7 +76,7 @@ export function CompoundMatrix() {
                         ) : value === null ? (
                           <span className="text-[11.5px]">survives</span>
                         ) : (
-                          <span className="tnum">{value.toFixed(1)}</span>
+                          <span className="tnum">{value.toFixed(0)}</span>
                         )}
                       </div>
                     </td>
@@ -85,8 +89,9 @@ export function CompoundMatrix() {
       </div>
 
       <p className="border-t border-line px-5 py-3 text-[12.5px] text-ink-3">
-        Every pair that includes a layoff breaks; no pair without one does. Income loss is the
-        multiplier — the expense shocks are only dangerous in its company.
+        Each off-diagonal cell is a live stacked <span className="text-ink">/simulate</span>{" "}
+        run. Numbers are the month index where credit exceeds available limit, or
+        &ldquo;survives&rdquo; if it never does.
       </p>
     </Card>
   );

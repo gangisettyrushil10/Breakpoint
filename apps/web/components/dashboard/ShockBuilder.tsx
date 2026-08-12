@@ -1,8 +1,11 @@
 "use client";
 
-import { useState } from "react";
 import { Card } from "@/components/ui/primitives";
-import { shockLibrary } from "@/lib/mock/profile";
+import {
+  shockCatalog,
+  useDashboard,
+} from "@/components/dashboard/DashboardProvider";
+import type { ShockId } from "@/lib/api/mappers";
 
 const categoryLabel = {
   income: "Income",
@@ -17,12 +20,7 @@ const categoryTone = {
 } as const;
 
 export function ShockBuilder() {
-  const [active, setActive] = useState<string[]>(
-    shockLibrary.filter((s) => s.active).map((s) => s.id)
-  );
-
-  const toggle = (id: string) =>
-    setActive((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  const { activeShocks, toggleShock, loading } = useDashboard();
 
   return (
     <Card padded={false}>
@@ -30,23 +28,24 @@ export function ShockBuilder() {
         <div>
           <h3 className="label">Shock library</h3>
           <p className="mt-1.5 text-[13px] text-ink-2">
-            Stack events to see how they compound. Ordering by real-world frequency, from the
-            Federal Reserve&apos;s 2025 household survey.
+            Toggle events to re-run the live simulator. Each change calls{" "}
+            <span className="text-ink">POST /simulate</span> with typed scenarios.
           </p>
         </div>
         <div className="tnum text-[13px] text-ink-2">
-          <span className="text-ink">{active.length}</span> active
+          <span className="text-ink">{activeShocks.length}</span> active
+          {loading ? <span className="ml-2 text-ink-3">updating…</span> : null}
         </div>
       </div>
 
       <div className="grid gap-px bg-line sm:grid-cols-2 lg:grid-cols-3">
-        {shockLibrary.map((shock) => {
-          const on = active.includes(shock.id);
+        {shockCatalog.map((shock) => {
+          const on = activeShocks.includes(shock.id);
           return (
             <button
               key={shock.id}
               type="button"
-              onClick={() => toggle(shock.id)}
+              onClick={() => toggleShock(shock.id as ShockId)}
               aria-pressed={on}
               className={`group flex flex-col items-start gap-1 bg-surface-1 p-4 text-left transition-colors hover:bg-surface-2 ${
                 on ? "bg-surface-2" : ""
@@ -70,7 +69,9 @@ export function ShockBuilder() {
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <span className={`text-[10.5px] uppercase tracking-wider ${categoryTone[shock.category]}`}>
+                <span
+                  className={`text-[10.5px] uppercase tracking-wider ${categoryTone[shock.category]}`}
+                >
                   {categoryLabel[shock.category]}
                 </span>
                 <span className="tnum text-[12px] text-ink-3">{shock.defaultCost}</span>
@@ -86,8 +87,8 @@ export function ShockBuilder() {
       </div>
 
       <p className="border-t border-line px-5 py-3 text-[12.5px] text-ink-3">
-        Toggling is wired to local state only in this build — the engine call that re-runs the
-        simulation is the next integration step.
+        Active shocks are sent as parameterized scenario objects. The score, timeline, and
+        breaking point update from the engine — not from hand-tuned mock charts.
       </p>
     </Card>
   );

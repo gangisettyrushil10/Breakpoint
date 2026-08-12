@@ -4,7 +4,6 @@ import {
   CartesianGrid,
   Line,
   LineChart,
-  ReferenceDot,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -12,23 +11,14 @@ import {
 } from "recharts";
 import { Card, CardTitle } from "@/components/ui/primitives";
 import { moneyCompact, money } from "@/lib/format";
-import { scenarioComparison } from "@/lib/mock/profile";
+import { useDashboard } from "@/components/dashboard/DashboardProvider";
 
-/* Categorical palette — validated for CVD separation on the charcoal surface. */
 const SERIES = [
   { id: "baseline", label: "No shocks", color: "var(--color-series-1)" },
   { id: "repair", label: "Vehicle repair only", color: "var(--color-series-2)" },
   { id: "layoff", label: "Layoff only", color: "var(--color-series-3)" },
   { id: "compound", label: "Layoff + repair", color: "var(--color-series-4)" },
 ] as const;
-
-const data = Array.from({ length: 12 }, (_, month) => {
-  const row: Record<string, number> = { month };
-  for (const series of scenarioComparison) {
-    row[series.id] = series.cash[month] / 100;
-  }
-  return row;
-});
 
 function ChartTooltip({
   active,
@@ -63,6 +53,18 @@ function ChartTooltip({
 }
 
 export function ScenarioComparison() {
+  const { scenarioComparison, comparisonLoading, months } = useDashboard();
+
+  const data = Array.from({ length: months }, (_, month) => {
+    const row: Record<string, number> = { month };
+    for (const series of scenarioComparison) {
+      row[series.id] = (series.cash[month] ?? 0) / 100;
+    }
+    return row;
+  });
+
+  const compoundBreak = scenarioComparison.find((s) => s.id === "compound")?.breaksAtMonth;
+
   return (
     <Card padded={false}>
       <div className="p-5 pb-0">
@@ -86,52 +88,50 @@ export function ScenarioComparison() {
       </div>
 
       <div className="h-[280px] px-2 pb-2">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ top: 12, right: 20, bottom: 8, left: 4 }}>
-            <CartesianGrid stroke="var(--color-line)" vertical={false} />
-            <XAxis
-              dataKey="month"
-              tick={{ fill: "var(--color-ink-3)", fontSize: 11 }}
-              tickLine={false}
-              axisLine={{ stroke: "var(--color-line-strong)" }}
-            />
-            <YAxis
-              tick={{ fill: "var(--color-ink-3)", fontSize: 11 }}
-              tickLine={false}
-              axisLine={false}
-              width={48}
-              tickFormatter={(v: number) => moneyCompact(v * 100)}
-            />
-            <Tooltip
-              content={<ChartTooltip />}
-              cursor={{ stroke: "var(--color-ink-3)", strokeWidth: 1 }}
-            />
-            {SERIES.map((s) => (
-              <Line
-                key={s.id}
-                type="monotone"
-                dataKey={s.id}
-                stroke={s.color}
-                strokeWidth={2}
-                dot={false}
-                activeDot={{ r: 4, strokeWidth: 2, stroke: "var(--color-bg)" }}
+        {comparisonLoading && scenarioComparison.length === 0 ? (
+          <p className="p-5 text-[14px] text-ink-3">Comparing scenarios via the live API…</p>
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={data} margin={{ top: 12, right: 20, bottom: 8, left: 4 }}>
+              <CartesianGrid stroke="var(--color-line)" vertical={false} />
+              <XAxis
+                dataKey="month"
+                tick={{ fill: "var(--color-ink-3)", fontSize: 11 }}
+                tickLine={false}
+                axisLine={{ stroke: "var(--color-line-strong)" }}
               />
-            ))}
-            <ReferenceDot
-              x={6}
-              y={0}
-              r={5}
-              fill="var(--color-critical)"
-              stroke="var(--color-bg)"
-              strokeWidth={2}
-            />
-          </LineChart>
-        </ResponsiveContainer>
+              <YAxis
+                tick={{ fill: "var(--color-ink-3)", fontSize: 11 }}
+                tickLine={false}
+                axisLine={false}
+                width={48}
+                tickFormatter={(v: number) => moneyCompact(v * 100)}
+              />
+              <Tooltip
+                content={<ChartTooltip />}
+                cursor={{ stroke: "var(--color-ink-3)", strokeWidth: 1 }}
+              />
+              {SERIES.map((s) => (
+                <Line
+                  key={s.id}
+                  type="monotone"
+                  dataKey={s.id}
+                  stroke={s.color}
+                  strokeWidth={2}
+                  dot={false}
+                  activeDot={{ r: 4, strokeWidth: 2, stroke: "var(--color-bg)" }}
+                />
+              ))}
+            </LineChart>
+          </ResponsiveContainer>
+        )}
       </div>
 
       <p className="border-t border-line px-5 py-3 text-[12.5px] text-ink-3">
-        Either shock alone is survivable. Together they are not — the repair lands while cash is
-        already draining, and the marked point in month 6 is where credit runs out too.
+        Each line is a separate live <span className="text-ink">/simulate</span> call.
+        {compoundBreak != null
+          ? ` Compound shocks trigger severe risk around month ${compoundBreak}.`
+          : " Compound shocks did not trigger severe risk in this profile window."}
       </p>
     </Card>
   );

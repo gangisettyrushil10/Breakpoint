@@ -3,14 +3,7 @@
 import { useState } from "react";
 import { Card, CardTitle } from "@/components/ui/primitives";
 import { money, moneyCompact, percent } from "@/lib/format";
-import { timeline, credit } from "@/lib/mock/profile";
-
-/*
-  Hand-built rather than charted by a library: the cash plot and the credit
-  track below it must share one x-scale exactly, and every event is annotated
-  in place. Two resources, two tracks with their own scales — credit is
-  borrowing capacity, not savings, and the chart never blends them.
-*/
+import { useDashboard } from "@/components/dashboard/DashboardProvider";
 
 const W = 920;
 const PAD_L = 62;
@@ -31,23 +24,6 @@ const CREDIT_BOTTOM = CREDIT_TOP + CREDIT_H;
 const AXIS_Y = 254;
 const H = 264;
 
-const CASH_MAX = 1_000_000;
-const LAST = timeline.length - 1;
-
-/* Band scale: each month owns a slot, so edge bars never overhang the axis. */
-const STEP = (W - PAD_L - PAD_R) / timeline.length;
-const x = (m: number) => PAD_L + STEP * (m + 0.5);
-const yCash = (cents: number) => CASH_BOTTOM - (cents / CASH_MAX) * CASH_H;
-
-const phases = [
-  { from: 0, to: 1, label: "Normal", color: "var(--color-ink-3)" },
-  { from: 2, to: 6, label: "Crisis", color: "var(--color-critical)" },
-  { from: 7, to: 11, label: "Recovery", color: "var(--color-stable)" },
-];
-
-const bandStart = (m: number) => PAD_L + STEP * m;
-const bandEnd = (m: number) => PAD_L + STEP * (m + 1);
-
 function utilizationColor(u: number) {
   if (u >= 0.99) return "var(--color-critical)";
   if (u >= 0.8) return "var(--color-caution)";
@@ -55,7 +31,57 @@ function utilizationColor(u: number) {
 }
 
 export function SurvivalTimeline() {
+  const { timeline, creditLimitCents, result, loading } = useDashboard();
   const [hover, setHover] = useState<number | null>(null);
+
+  if (loading && timeline.length === 0) {
+    return (
+      <Card padded>
+        <p className="text-[14px] text-ink-3">Running simulation…</p>
+      </Card>
+    );
+  }
+
+  if (timeline.length === 0) {
+    return (
+      <Card padded>
+        <p className="text-[14px] text-ink-3">No timeline data yet.</p>
+      </Card>
+    );
+  }
+
+  const LAST = timeline.length - 1;
+  const STEP = (W - PAD_L - PAD_R) / timeline.length;
+  const x = (m: number) => PAD_L + STEP * (m + 0.5);
+  const CASH_MAX = Math.max(
+    1_000_000,
+    ...timeline.map((d) => d.cashCents),
+    100_000
+  );
+  const yCash = (cents: number) => CASH_BOTTOM - (cents / CASH_MAX) * CASH_H;
+  const bandStart = (m: number) => PAD_L + STEP * m;
+  const bandEnd = (m: number) => PAD_L + STEP * (m + 1);
+
+  const crisisMonths = timeline.filter((d) => d.phase === "crisis").map((d) => d.month);
+  const crisisFrom = crisisMonths.length ? Math.min(...crisisMonths) : -1;
+  const crisisTo = crisisMonths.length ? Math.max(...crisisMonths) : -1;
+
+  const phases = [
+    { from: 0, to: Math.max(0, crisisFrom - 1), label: "Normal", color: "var(--color-ink-3)" },
+    ...(crisisFrom >= 0
+      ? [{ from: crisisFrom, to: crisisTo, label: "Crisis", color: "var(--color-critical)" }]
+      : []),
+    ...(crisisTo >= 0 && crisisTo < LAST
+      ? [
+          {
+            from: crisisTo + 1,
+            to: LAST,
+            label: "Recovery",
+            color: "var(--color-stable)",
+          },
+        ]
+      : []),
+  ].filter((p) => p.to >= p.from);
 
   const cashPath = timeline
     .map((d, i) => `${i === 0 ? "M" : "L"}${x(d.month)} ${yCash(d.cashCents)}`)
@@ -64,6 +90,9 @@ export function SurvivalTimeline() {
 
   const events = timeline.filter((d) => d.event);
   const active = hover !== null ? timeline[hover] : null;
+  const cashOutMonth = timeline.find((d) => d.cashCents <= 0)?.month;
+  const breakMonth = result?.breakingPoint.monthIndex;
+  const overage = result?.breakingPoint.overageCents ?? 0;
 
   return (
     <Card padded={false}>
@@ -82,7 +111,7 @@ export function SurvivalTimeline() {
             </div>
           }
         >
-          Survival timeline · 12 months
+          Survival timeline · {timeline.length} months
         </CardTitle>
       </div>
 
@@ -91,10 +120,9 @@ export function SurvivalTimeline() {
           viewBox={`0 0 ${W} ${H}`}
           className="w-full min-w-[680px]"
           role="img"
-          aria-label="Liquid cash and credit utilization across twelve months. Cash is exhausted in month 4 and the credit limit is reached in month 6."
+          aria-label="Liquid cash and credit utilization across the simulation horizon."
           onMouseLeave={() => setHover(null)}
         >
-          {/* phase strip — labels the pressure regime without washing the plot */}
           {phases.map((phase) => {
             const x0 = bandStart(phase.from);
             const x1 = bandEnd(phase.to);
@@ -103,7 +131,7 @@ export function SurvivalTimeline() {
                 <rect
                   x={x0}
                   y={PHASE_Y}
-                  width={x1 - x0 - 3}
+                  width={Math.max(0, x1 - x0 - 3)}
                   height={PHASE_H}
                   rx={2}
                   fill={phase.color}
@@ -123,17 +151,17 @@ export function SurvivalTimeline() {
             );
           })}
 
-          {/* crisis window, very light — depth without hard blocks */}
-          <rect
-            x={bandStart(2)}
-            y={CASH_TOP - 6}
-            width={bandEnd(6) - bandStart(2)}
-            height={CREDIT_BOTTOM - CASH_TOP + 6}
-            fill="var(--color-critical)"
-            opacity={0.035}
-          />
+          {crisisFrom >= 0 ? (
+            <rect
+              x={bandStart(crisisFrom)}
+              y={CASH_TOP - 6}
+              width={bandEnd(crisisTo) - bandStart(crisisFrom)}
+              height={CREDIT_BOTTOM - CASH_TOP + 6}
+              fill="var(--color-critical)"
+              opacity={0.035}
+            />
+          ) : null}
 
-          {/* cash gridlines */}
           {[0, 0.5, 1].map((f) => {
             const gy = CASH_BOTTOM - f * CASH_H;
             return (
@@ -170,7 +198,6 @@ export function SurvivalTimeline() {
             CASH
           </text>
 
-          {/* cash area + line */}
           <defs>
             <linearGradient id="cashFill" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="var(--color-accent)" stopOpacity="0.3" />
@@ -187,13 +214,12 @@ export function SurvivalTimeline() {
             strokeLinejoin="round"
           />
 
-          {/* event markers */}
           {events.map((d) => {
             const isBreak =
               d.event!.includes("exhausted") || d.event!.includes("missed");
             const color = isBreak ? "var(--color-critical)" : "var(--color-ink-3)";
             return (
-              <g key={d.month}>
+              <g key={`${d.month}-${d.event}`}>
                 <line
                   x1={x(d.month)}
                   x2={x(d.month)}
@@ -209,19 +235,26 @@ export function SurvivalTimeline() {
             );
           })}
 
-          {/* cash-zero emphasis */}
-          <circle cx={x(4)} cy={yCash(0)} r={3.5} fill="var(--color-critical)" />
-          <circle
-            cx={x(4)}
-            cy={yCash(0)}
-            r={6.5}
-            fill="none"
-            stroke="var(--color-critical)"
-            strokeWidth={1}
-            opacity={0.45}
-          />
+          {cashOutMonth != null ? (
+            <>
+              <circle
+                cx={x(cashOutMonth)}
+                cy={yCash(0)}
+                r={3.5}
+                fill="var(--color-critical)"
+              />
+              <circle
+                cx={x(cashOutMonth)}
+                cy={yCash(0)}
+                r={6.5}
+                fill="none"
+                stroke="var(--color-critical)"
+                strokeWidth={1}
+                opacity={0.45}
+              />
+            </>
+          ) : null}
 
-          {/* credit track */}
           <text
             x={PAD_L - 10}
             y={CREDIT_TOP + 4}
@@ -256,7 +289,6 @@ export function SurvivalTimeline() {
             stroke="var(--color-line-strong)"
             strokeWidth={1}
           />
-          {/* credit limit ceiling */}
           <line
             x1={PAD_L}
             x2={W - PAD_R}
@@ -274,10 +306,9 @@ export function SurvivalTimeline() {
             fontSize={9.5}
             fill="var(--color-critical)"
           >
-            LIMIT {moneyCompact(credit.limitCents)}
+            LIMIT {moneyCompact(creditLimitCents)}
           </text>
 
-          {/* month axis */}
           {timeline.map((d) => (
             <text
               key={d.month}
@@ -301,7 +332,6 @@ export function SurvivalTimeline() {
             MO
           </text>
 
-          {/* hover crosshair */}
           {active ? (
             <>
               <line
@@ -324,7 +354,6 @@ export function SurvivalTimeline() {
             </>
           ) : null}
 
-          {/* hit areas */}
           {timeline.map((d) => (
             <rect
               key={d.month}
@@ -339,8 +368,6 @@ export function SurvivalTimeline() {
         </svg>
       </div>
 
-      {/* readout — a pinned row rather than a floating tooltip, so the value
-          is legible without covering the plot */}
       <div className="border-t border-line px-5 py-3">
         <div className="flex flex-wrap items-center gap-x-8 gap-y-2">
           <div className="min-w-[64px]">
@@ -381,7 +408,6 @@ export function SurvivalTimeline() {
         </div>
       </div>
 
-      {/* breakpoint callouts */}
       <div className="grid gap-px border-t border-line bg-line sm:grid-cols-2">
         <div className="bg-surface-1 p-4">
           <div className="flex items-center gap-2">
@@ -389,8 +415,14 @@ export function SurvivalTimeline() {
             <span className="label text-caution">First failure</span>
           </div>
           <p className="mt-1.5 text-[14px] text-ink-2">
-            <span className="tnum text-ink">Month 4</span> — liquid cash reaches zero.
-            Essentials begin moving onto the credit card.
+            {cashOutMonth != null ? (
+              <>
+                <span className="tnum text-ink">Month {cashOutMonth}</span> — liquid cash
+                reaches zero. Essentials begin moving onto the credit card.
+              </>
+            ) : (
+              <>Cash stays positive across the simulated horizon.</>
+            )}
           </p>
         </div>
         <div className="bg-surface-1 p-4">
@@ -399,8 +431,21 @@ export function SurvivalTimeline() {
             <span className="label text-critical">Breaking point</span>
           </div>
           <p className="mt-1.5 text-[14px] text-ink-2">
-            <span className="tnum text-ink">Month 6</span> — the card hits its $7,500 limit
-            with <span className="tnum">$2,046</span> of obligations still due.
+            {breakMonth != null && result?.breakingPoint.triggered ? (
+              <>
+                <span className="tnum text-ink">Month {breakMonth}</span> — credit exceeds
+                available limit
+                {overage > 0 ? (
+                  <>
+                    {" "}
+                    with <span className="tnum">{money(overage)}</span> overage
+                  </>
+                ) : null}
+                .
+              </>
+            ) : (
+              <>No severe-risk trigger in this run.</>
+            )}
           </p>
         </div>
       </div>

@@ -1,6 +1,8 @@
+"use client";
+
 import { Card, CardTitle } from "@/components/ui/primitives";
 import { money, percent } from "@/lib/format";
-import { obligations, income } from "@/lib/mock/profile";
+import { useDashboard } from "@/components/dashboard/DashboardProvider";
 
 const tierMeta = {
   required: { label: "Required", cls: "bg-critical/70", text: "text-critical" },
@@ -12,12 +14,16 @@ const tierMeta = {
 const tiers = ["required", "semi-flexible", "discretionary", "surplus"] as const;
 
 export function ObligationStack() {
-  const total = income.monthlyTakeHomeCents;
+  const { obligations, profile } = useDashboard();
+  const total = profile.income.monthlyTakeHomeCents;
   const byTier = tiers.map((tier) => {
     const items = obligations.filter((o) => o.tier === tier);
     const sum = items.reduce((s, o) => s + o.amountCents, 0);
-    return { tier, items, sum, share: sum / total };
+    return { tier, items, sum, share: total > 0 ? sum / total : 0 };
   });
+
+  const housingShare =
+    (profile.expenses.rentCents + profile.expenses.transportationCents) / total;
 
   return (
     <Card padded={false}>
@@ -34,7 +40,6 @@ export function ObligationStack() {
       </div>
 
       <div className="px-5">
-        {/* stacked bar — 2px gaps so adjacent fills stay legible */}
         <div className="flex h-9 w-full gap-[2px] overflow-hidden rounded-md">
           {byTier.map(({ tier, share }) => (
             <div
@@ -76,8 +81,8 @@ export function ObligationStack() {
 
       <p className="border-t border-line px-5 py-3 text-[12.5px] text-ink-3">
         Housing and transportation together take{" "}
-        <span className="tnum text-ink-2">42.5%</span> of take-home — in line with national
-        averages, and the reason the crisis budget cannot be trimmed much further.
+        <span className="tnum text-ink-2">{percent(housingShare, 1)}</span> of take-home —
+        from the live profile, not a mock constant.
       </p>
     </Card>
   );

@@ -2,37 +2,175 @@
 
 **A financial fire drill for renters and new grads — especially before signing a lease.**
 
-A credit score tells institutions how risky you are to *them*. BreakPoint tells you how risky your life is to *you*.
+> A credit score tells institutions how risky you are to *them*.
+> BreakPoint tells you how risky your life is to *you*.
 
-BreakPoint is a deterministic financial-distress simulator. You give it a monthly budget (income, rent, debt, savings), and it stress-tests that budget against realistic emergencies — a car repair, a rent hike, a layoff, or several stacked together — and answers one question:
+Most budgeting apps show you where your money went. BreakPoint answers a different question:
 
 > **How many bad things can happen before this budget breaks?**
 
-It is not a budgeting app, and it is not another "AI financial advisor" that guesses. Every number — the runway, the resilience score, the breaking point — comes out of plain, auditable Python math. The same inputs always produce the same outputs.
+You give it a monthly budget. It stress-tests that budget against realistic emergencies — a car repair, a medical bill, a rent hike, a layoff, or several stacked in the same window — and finds the **breaking point**: the smallest combination of bad luck where essentials start going unpaid.
+
+Then a chat agent explains the result in plain English. **The agent is structurally incapable of inventing a number** — it has no access to your budget except through a tool call into the deterministic engine, and an output guardrail withholds any reply containing a figure the engine didn't produce.
 
 ---
 
-## Table of contents
+## Contents
 
-- [Why this project exists](#why-this-project-exists)
+- [Try it in five minutes](#try-it-in-five-minutes)
+- [Demo persona: Devin Cross](#demo-persona-devin-cross)
+- [What you should see](#what-you-should-see)
+- [The engineering problem worth reading about](#the-engineering-problem-worth-reading-about)
 - [Architecture](#architecture)
 - [The simulation pipeline](#the-simulation-pipeline)
 - [Core concepts](#core-concepts)
 - [Repo layout](#repo-layout)
-- [Build status](#build-status)
-- [Running it locally](#running-it-locally)
-- [Design decisions](#design-decisions)
-- [Roadmap](#roadmap)
+- [Testing](#testing)
+- [Status](#status)
+- [Known issues](#known-issues)
 
 ---
 
-## Why this project exists
+## Try it in five minutes
 
-Most budgeting tools show you where money went. Almost none tell you how close you are to a financial cliff, or what specific combination of bad luck would push you over it. BreakPoint is built around a single non-negotiable rule:
+You need **Python 3.11+** and **Node 20+**. An OpenAI key is optional — without one, the dashboard and the whole deterministic engine still work, and only the chat tab degrades with a clear message.
 
-> **The simulation engine calculates. The LLM (later) only explains. The frontend only shows.**
+**Terminal 1 — the engine:**
 
-No model is ever allowed to invent a score, a runway estimate, or a breaking point — those are pure functions of the numbers you give it. This makes the tool auditable: every result can be traced back to a formula, not a guess.
+```bash
+cd services/api
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+
+cp .env.example .env      # optional: add OPENAI_API_KEY for the chat agent
+uvicorn app.main:app --reload --port 8000
+```
+
+**Terminal 2 — the UI:**
+
+```bash
+cd apps/web
+npm install
+npm run dev
+```
+
+Open **http://localhost:3000**. Health check: `curl localhost:8000/health`.
+
+> If port 3000 is taken, Next.js falls back to 3001 — already in the API's CORS allowlist, so it just works.
+
+Accounts are **optional and off by default**. With no Supabase keys the app runs exactly as it always has and nothing leaves your browser. To enable sign-in and cross-device saving, see [Optional: accounts](#optional-accounts).
+
+---
+
+## Demo persona: Devin Cross
+
+Don't invent numbers — you'll usually land somewhere boring. Type **these** into the intake form at `/intake` and you'll see the product make its point.
+
+> **Devin Cross**, 26, veterinary technician in Charlotte, NC. Single, no dependents, salaried and not worried about their job. Renting, about to re-sign a lease. On paper Devin is *fine* — they save money every single month.
+
+**Household**
+
+| Field | Value |
+|---|---|
+| City / State / ZIP | Charlotte / NC / 28205 |
+| Dependents | 0 |
+| Job stability | Stable — salaried or long-tenured |
+| Pay frequency | Every two weeks |
+
+**Income**
+
+| Field | Value |
+|---|---|
+| Monthly take-home | `4120.00` |
+
+**Monthly expenses**
+
+| Field | Value |
+|---|---|
+| Rent or mortgage | `1690.00` |
+| Utilities | `145.00` |
+| Groceries | `420.00` |
+| Transportation | `295.00` |
+| Insurance | `165.00` |
+| Other essential | `80.00` |
+| Subscriptions | `65.00` |
+| Discretionary | `310.00` |
+
+**Debt and credit**
+
+| Field | Value |
+|---|---|
+| Monthly debt minimums | `260.00` |
+| Credit card balance | `2850.00` |
+| Available credit | `5500.00` — enter your **total credit line** here, see [Known issues](#known-issues) |
+| Credit card APR | `24.99` |
+
+**Savings**
+
+| Field | Value |
+|---|---|
+| Liquid savings | `3400.00` |
+
+---
+
+## What you should see
+
+Devin banks **$690 every month** and has never missed a bill. The dashboard says:
+
+| | |
+|---|---|
+| **Resilience score** | **48 / 100** |
+| Monthly buffer | **+$690** |
+| Emergency runway | **1.11 months** |
+
+Now stack emergencies with the shock builder. Individually, Devin absorbs all of them:
+
+| Shock | Result |
+|---|---|
+| $750 car repair | survives |
+| $1,500 medical bill | survives |
+| Rent hike, +$200/mo | survives |
+| **Layoff** | **breaks in month 1, $810 past the credit line** |
+
+**One job loss is the entire story.** Everything else is noise.
+
+Then the prevention plan lands the punch — to have survived that layoff, Devin needed **$810 more in savings, or to cut $405/month**. But their *entire* discretionary and subscription spending is **$375/month**. Cancelling literally everything fun would not have been enough. The plan reports `monthlyCutFeasible: false`.
+
+That is the thesis of the product in one screen: **a person who saves money every month, has no missed payments, and would look fine to any credit model is one ordinary event away from the cliff — and cannot budget their way out of it.**
+
+Finally, open the chat tab and ask:
+
+> *"How many bad things can happen to me before I'm in real trouble?"*
+
+The agent calls the engine and answers from the result — never from its own arithmetic:
+
+> **One major bad event can put you in real trouble: a layoff.** In the stress test, a layoff beginning in the second projected month caused your credit-card balance to exceed available credit by **$810.00** — the point where essentials would start going unpaid.
+>
+> Your normal monthly buffer is **$690.00**, but your liquid savings provide only about **1.11 months** of essential-expense runway.
+>
+> The prevention plan says you'd need **$810.00 more in savings**, or a monthly reduction of **$405.00**. Your currently cuttable subscriptions and discretionary spending total **$375.00 per month**, so cutting only those would not quite meet the target.
+
+Try `"What if I lose my job and it takes 4 months to find work?"` too — the agent turns free text into a **typed scenario** (`{"type":"layoff","startMonth":0,"durationMonths":4}`), re-runs the engine, and reports the new breaking point.
+
+---
+
+## The engineering problem worth reading about
+
+The interesting part of this repo is not the financial math. It is **constraining a language model so that it cannot fabricate**, while still letting it hold a natural conversation.
+
+**The model has no data.** It never receives the budget. Its only route to any figure is a `simulate` tool call that runs the same deterministic pipeline as `POST /simulate` — a test asserts the tool and the HTTP route produce byte-identical output for identical input.
+
+**A grounding ledger decides what a reply may say.** Every figure the engine returned is recorded; the reply is diffed against that ledger. A number that isn't in it is ungrounded.
+
+**Ungrounded replies are regenerated or withheld — never patched.** An earlier design rewrote bad numbers in place. An audit found that this fabricated *new* wrong numbers, so it was replaced wholesale.
+
+**Streaming without weakening the guarantee.** Naively streaming tokens puts fabricated figures on screen before any check runs. Instead, the guardrails were already sentence-scoped pure functions, so they run incrementally per completed sentence and gate its release. A property test pins that the incremental and batch judgements are identical under arbitrary chunk boundaries — and the terminal `done` frame is authoritative, so the client discards everything streamed. That reduces a whole class of risk to one equivalence test.
+
+**The eval set tests permission, not just prohibition.** It caught a guardrail blocking `401(k)` as an ungrounded number — a false positive that would have stopped the agent giving the exact safety advice it exists to give.
+
+Full reasoning, including what was deliberately rejected, is in [ARCHITECTURE.md](ARCHITECTURE.md).
+
+---
 
 ## Architecture
 
@@ -40,165 +178,127 @@ No model is ever allowed to invent a score, a runway estimate, or a breaking poi
 flowchart LR
     subgraph Frontend["apps/web — Next.js + TypeScript"]
         Form["Intake form"]
-        Dashboard["Score / runway / breaking-point dashboard"]
+        Dash["Dashboard: score, timeline, shock builder"]
+        Chat["Chat (SSE streaming)"]
     end
 
     subgraph Backend["services/api — FastAPI + Python"]
         Routes["Thin HTTP routes"]
-        Domain["domain/ — FinancialProfile contract"]
-        Sim["simulation/ — baseline, monthly loop,\nmulti-month runner, scoring"]
-        Scenarios["scenarios/ — car repair, rent hike,\nlayoff presets"]
+        Agent["agent/ — loop, grounding ledger, guardrails"]
+        Sim["simulation/ — pure, deterministic, LLM-free"]
     end
 
-    Form -- "POST /simulate (JSON)" --> Routes
-    Routes --> Domain
+    Form -- "POST /simulate" --> Routes
+    Chat -- "POST /agent/chat/stream" --> Routes
+    Routes --> Agent
+    Agent -- "simulate tool" --> Sim
     Routes --> Sim
-    Sim --> Scenarios
-    Routes -- "score, runway, breaking point (JSON)" --> Dashboard
+    Sim -- "score, runway, breaking point" --> Dash
 ```
 
-Money is a **language-agnostic JSON contract**, not something owned by either side of the stack:
+The hard boundary between `simulation/` and `agent/` is the main structural decision in the project: **the engine has no idea the agent exists.**
+
+Money is a language-agnostic JSON contract in **integer cents**, owned by Python:
 
 ```mermaid
 flowchart LR
-    A["Pydantic models\n(Python, source of truth)"] --> B["OpenAPI / JSON Schema"] --> C["Generated TypeScript types\n(apps/web)"]
+    A["Pydantic models<br/>(source of truth)"] --> B["OpenAPI / JSON Schema"] --> C["TypeScript types<br/>(apps/web)"]
 ```
-
-Why Python for the simulation core instead of doing it in TypeScript: the simulator is the actual product differentiator (not the form UI), and it's the natural home for the risk-modeling and ML work planned later (NumPy/SciPy/scikit-learn). One FastAPI backend, not a microservice zoo.
 
 ## The simulation pipeline
 
-This is the core engine, in the order data flows through it:
-
 ```mermaid
 flowchart TD
-    Profile["FinancialProfile\nincome · expenses · debt · savings"]
-    Baseline["compute_baseline()\nfixed / essential / total expenses\nmonthly buffer · runway months"]
-    Monthly["simulate_month()\none month: income in, bills out,\nshocks out, deficit rolls to credit card"]
-    Runner["run_months()\nchains simulate_month() across N months,\napplying a schedule of per-month adjustments"]
-    Scenarios["scenario library\ncar_repair · rent_hike · layoff\n(named, reusable, stackable via merge_schedules)"]
-    Score["compute_resilience_score()\n0-100, weighted from runway / buffer / credit headroom"]
-    Breaking["find_breaking_point()\nsearches stacked scenario combinations\nfor the smallest one that triggers severe risk"]
-    Prevention["build_prevention_plan()\nclosed-form: exact extra savings or\nmonthly cut that would have avoided it"]
+    Profile["FinancialProfile<br/>income · expenses · debt · savings"]
+    Baseline["compute_baseline()<br/>buffer · runway"]
+    Runner["run_months()<br/>income in, bills out, shocks out,<br/>deficit rolls to credit"]
+    Scenarios["scenario library<br/>car repair · medical · rent hike · layoff"]
+    Score["compute_resilience_score()<br/>0–100 from runway / buffer / credit"]
+    Breaking["find_breaking_point()<br/>searches stacked combinations,<br/>smallest stack first"]
+    Prevention["build_prevention_plan()<br/>closed-form savings or monthly cut"]
 
-    Profile --> Baseline --> Monthly
-    Monthly --> Runner
-    Scenarios --> Runner
-    Runner --> Score
+    Profile --> Baseline --> Runner
+    Scenarios --> Runner --> Score
     Runner --> Breaking
-    Scenarios --> Breaking
-    Breaking --> Prevention
+    Scenarios --> Breaking --> Prevention
 ```
 
-**Worked example** — a $4,350/month take-home with $3,250 in monthly expenses has a $1,100 buffer. Run a `layoff` scenario (income → $0) for two months: month 1 drains savings and pushes the rest onto the credit card, month 2 goes fully to the credit card, month 3 (income restored) starts recovering. `find_breaking_point()` runs exactly this kind of search across combinations of presets — single shocks first, then pairs, then triples — until it finds one where the credit-card balance exceeds available credit (essentials can no longer be covered), or reports that the budget survived everything tried.
-
-Once a breaking point is found, `build_prevention_plan()` answers "what would have prevented this" with two closed-form numbers derived from the exact dollar amount the credit balance overshot available credit by: the extra starting savings that would have absorbed it, and the permanent monthly spending cut (spread across the months leading up to the break) that would have absorbed it instead — capped against a feasibility check against actual discretionary + subscription spending, so it never recommends cutting more than the person actually spends. If the person's credit balance was already over their limit *before* any shock, the plan says so plainly instead of pretending savings could fix it — this engine never repays existing debt, so no future savings amount can undo a limit that's already blown.
-
-**Scenarios are parameterized, not fixed presets.** `POST /simulate` takes a `scenarios` array of typed objects (`app/scenarios/schema.py`), each with its own amount and timing — a $340 rent hike starting next month is a different request from the default $200 one, not a different preset name. A `custom_shock` type is the escape hatch for anything that isn't a named preset at all (a pet emergency, a one-time fine): `{"type": "custom_shock", "monthIndex": 2, "name": "pet_emergency", "costCents": 40000}`. This is deliberately the same structured shape Phase 2's LLM layer will eventually populate from free text — "my rent just went up $340" becomes this JSON instead of a hardcoded preset pick, without the engine itself changing at all.
+Cash and credit are tracked **separately and on purpose**: credit *delays* a failure rather than preventing one, so running out of cash and running out of credit are two distinct events with two distinct markers on the timeline.
 
 ## Core concepts
 
 | Term | Meaning |
 |------|---------|
 | **Baseline** | A normal month: income in, bills out, leftover |
-| **Buffer** | Leftover cash after a normal month's expenses |
+| **Buffer** | Leftover cash after a normal month |
 | **Runway** | Months of essential expenses covered by liquid savings |
-| **Shock** | One emergency cost (car repair, medical bill) |
-| **Scenario** | A named, reusable shock/income/expense pattern (layoff, rent hike) |
-| **Stacked shocks** | Several scenarios overlapping in the same months |
-| **Severe risk** | A month where even available credit can't cover the deficit |
-| **Breaking point** | The smallest realistic combination of shocks that triggers severe risk |
-| **Resilience score** | An explainable 0–100 score built from three weighted formulas — not a model's guess |
-| **Prevention plan** | The exact extra savings or monthly cut that would have avoided a breaking point — closed-form, not a guess |
+| **Shock** | One emergency cost |
+| **Scenario** | A typed, parameterized shock pattern — a $340 rent hike is a different *request*, not a different preset |
+| **Breaking point** | The smallest realistic combination of shocks where essentials go unpaid |
+| **Resilience score** | An explainable 0–100 from three weighted formulas — never a model's guess |
+| **Prevention plan** | The exact extra savings or monthly cut that would have avoided it, checked for feasibility |
 | **Deterministic** | Same inputs always produce the same outputs |
 
 ## Repo layout
 
 ```text
 breakpoint/
-├── apps/
-│   └── web/                    Next.js + TypeScript UI (scaffolded, not yet built)
-│       ├── components/
-│       │   ├── intake/         financial input UI
-│       │   └── dashboard/      score / runway / results UI
-│       └── lib/api/            typed client calling FastAPI
+├── apps/web/                  Next.js + TypeScript UI
+│   ├── app/                   dashboard · intake · chat · account
+│   ├── components/            dashboard, chat, intake
+│   ├── lib/                   typed API client, storage, supabase
+│   └── tests/                 vitest — persistence contract
 │
-├── services/
-│   └── api/                    FastAPI + simulation engine
-│       ├── app/
-│       │   ├── domain/         FinancialProfile contract (Pydantic)
-│       │   ├── simulation/     baseline, monthly loop, multi-month runner, scoring
-│       │   ├── scenarios/      preset emergency library
-│       │   ├── routes/         thin HTTP endpoints
-│       │   └── main.py
-│       └── tests/              engine tests — the critical coverage
+├── services/api/              FastAPI + the engine
+│   └── app/
+│       ├── domain/            FinancialProfile contract (Pydantic)
+│       ├── simulation/        pure functions — no network, no LLM
+│       ├── scenarios/         typed shock library
+│       ├── agent/             loop · grounding · guardrails · tools
+│       └── routes/            thin HTTP endpoints
 │
-├── packages/
-│   └── contracts/              shared OpenAPI / JSON Schema artifacts (planned)
-│
-└── ARCHITECTURE.md             full architecture decision record
+├── supabase/migrations/       optional accounts + persistence
+└── ARCHITECTURE.md            full decision record
 ```
 
-**Layer boundary rules**, enforced by convention: `apps/web` never contains score formulas or shock math; `services/api` routes never contain React, UI copy, or LLM prompts; `simulation/` is pure functions only — no network calls, no I/O.
+**Boundary rules:** `apps/web` never contains score formulas or shock math. `simulation/` is pure functions — no network, no I/O, no LLM.
 
-## Build status
-
-Phase 1 (deterministic simulator, no LLM yet) — see [ARCHITECTURE.md](ARCHITECTURE.md) for the full plan.
-
-| Step | Piece | Status |
-|------|-------|--------|
-| 1 | `FinancialProfile` contract + validation | ✅ Done |
-| 2 | Baseline math (buffer, runway, expenses) | ✅ Done |
-| 3 | One-month simulation + one-time shocks | ✅ Done |
-| 4 | Multi-month runner | ✅ Done |
-| 5 | Scenario library (car repair, rent hike, layoff) | ✅ Done |
-| 6 | Resilience score + breaking-point search | ✅ Done |
-| 7 | `POST /simulate` HTTP endpoint | ✅ Done |
-| 8 | `GET /health` | ✅ Done |
-| 9 | Prevention/recommendation engine (extra savings, monthly cut) | ✅ Done |
-| 10 | Next.js intake form + dashboard | ⬜ Not started |
-| 11 | LLM explanation layer | ⬜ Not started (Phase 2, deliberately deferred) |
-
-**Phase 1 complete end-to-end, plus a prevention layer beyond the original scope.** 37 automated tests, all passing — profile validation, baseline math, single-month simulation, the multi-month runner, every scenario preset (individually and stacked), the resilience score formula, the breaking-point search, the prevention engine (proven by re-simulating with its own recommendations applied), and the `/simulate` HTTP route itself (via FastAPI's `TestClient`).
-
-## Running it locally
-
-### Backend (FastAPI)
+## Testing
 
 ```bash
-cd services/api
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-
-uvicorn app.main:app --reload --port 8000
-# health check: http://localhost:8000/health
+cd services/api && source .venv/bin/activate && pytest    # 241 tests
+cd apps/web && npm test                                   # 24 tests
 ```
 
-### Tests
+The agent suite runs the **full agent loop against a scripted model** — no network, no API key, no flake. Guardrails are covered by an adversarial eval set that tests both prohibition and permission.
 
-```bash
-cd services/api
-source .venv/bin/activate
-pytest -v
+## Status
+
+| Phase | Scope | Status |
+|---|---|---|
+| 1 | Deterministic engine, `POST /simulate`, dashboard | ✅ Complete |
+| 2 | Chat agent, tools, guardrails | ✅ Complete |
+| 2.5 | Grounding ledger, availability + deploy safety | ✅ Complete |
+| 2.6 | Shared profile, intake form, SSE streaming, eval set | ✅ Complete |
+| 2.7 | Optional accounts, Postgres persistence, RLS | ✅ Complete |
+| 3 | Research tools — gas prices, Fair Market Rents, local events | ⬜ Not started |
+
+## Optional: accounts
+
+Signed out, everything stays in the browser — that is the default and it is a deliberate privacy property for financial data. To enable cross-device saving, create a Supabase project and add to `apps/web/.env.local`:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 ```
 
-### Frontend (scaffold only, not yet wired to the API)
+Then apply the schema with `supabase db push`. The profile and chat transcript are stored per user under row-level security, with no public read path. Sign-in is at `/account`.
 
-```bash
-cd apps/web
-npm install
-npm run dev
-# http://localhost:3000
-```
+## Known issues
 
-## Design decisions
+- **`availableCreditCents` is read two different ways.** The breaking-point search ([`scoring.py`](services/api/app/simulation/scoring.py)) and the prevention plan treat it as the **total credit line**, while the resilience subscore, the dashboard's `creditLimitCents`, and the intake form's own hint treat it as **remaining headroom**. Until this is reconciled, enter your total credit line in that field — following the form hint instead can report a breaking point in month 0 before any emergency is applied.
+- **The preset stress test is gentle.** The default layoff is 2 months with no replacement income, so the open-ended "what would break me?" search can report no breaking point for someone with barely a month of runway. When nothing breaks, the reply should name what was actually tested.
 
-The full reasoning — why Python over a TypeScript-only stack, why money is stored in integer cents, why the simulator is pure functions with no I/O, what was explicitly rejected for Phase 1 (Plaid, auth, Postgres, LangGraph) and why — is documented in [ARCHITECTURE.md](ARCHITECTURE.md).
+## License
 
-## Roadmap
-
-1. **Next.js intake + dashboard** — a real form calling the API, rendering score/runway/breaking point.
-2. **Phase 2 — Agent layer** — a conversational LLM that asks intake questions and explains *already-computed* results in plain English. It never invents the numbers.
-3. **Phase 3 — Real data** — HUD Fair Market Rents / FRED context, optional Plaid connection.
-4. **Phase 4 — Stickiness** — score history, "what changed" alerts, heavier modeling only if the product pulls for it.
+[MIT](LICENSE)

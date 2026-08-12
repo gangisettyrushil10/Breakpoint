@@ -3,7 +3,7 @@
 **Status:** Locked for Phase 1  
 **Product:** BreakPoint (Financial Distress Simulator)  
 **Last updated:** 2026-08-04  
-**Repo root:** `Affordability Agent/breakpoint/`
+**Repo root:** `breakpoint/`
 
 ---
 
@@ -30,14 +30,19 @@ Never let the model invent the resilience score, runway, or breaking point. Same
 **Option 2: TypeScript frontend + Python backend**
 
 ```text
+Supabase (Postgres + Auth)          ← profile + transcript, RLS per user
+        ↕ 
 Next.js (apps/web)
         ↓ HTTP / JSON
-FastAPI (services/api)
+FastAPI (services/api)               ← stateless; never touches the database
         ↓
 Pure Python simulation package
-        ↓
-PostgreSQL (later)
 ```
+
+Persistence hangs off the web app, not the API. The simulation service stays
+stateless: it is handed a profile and returns a result, which keeps the
+deterministic guarantee easy to reason about and easy to test. See the
+2026-08-12 rows in the decision log.
 
 ### Why not TypeScript-only?
 
@@ -304,3 +309,7 @@ Killer line for the vision:
 | 2026-08-04 | Monorepo: `apps/web`, `services/api`, `packages/contracts` |
 | 2026-08-04 | Money as integer cents; `schemaVersion`; Pydantic → OpenAPI → generated TS types |
 | 2026-08-04 | Phase 1 = manual form + simulator + dashboard; no Plaid/ML/agents yet |
+| 2026-08-12 | Persistence = Supabase (Postgres + Auth), owned by `apps/web`, not `services/api` |
+| 2026-08-12 | Profile stored as `jsonb`, not typed columns — pydantic stays the one canonical schema |
+| 2026-08-12 | Sign-in optional; signed out the app is unchanged and nothing leaves the browser |
+| 2026-08-12 | Email + password auth, not magic links — no SMTP dependency to sign in |

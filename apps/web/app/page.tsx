@@ -1,4 +1,7 @@
+"use client";
+
 import { Section } from "@/components/ui/primitives";
+import { DashboardProvider } from "@/components/dashboard/DashboardProvider";
 import { ProfileHeader } from "@/components/dashboard/ProfileHeader";
 import { ResilienceVerdict } from "@/components/dashboard/ResilienceVerdict";
 import { SurvivalTimeline } from "@/components/dashboard/SurvivalTimeline";
@@ -10,10 +13,11 @@ import { RecoveryComparison } from "@/components/dashboard/RecoveryComparison";
 import { ScenarioComparison } from "@/components/dashboard/ScenarioComparison";
 import { CompoundMatrix } from "@/components/dashboard/CompoundMatrix";
 import { AssumptionsPanel } from "@/components/dashboard/AssumptionsPanel";
+import { DataFooter } from "@/components/dashboard/DataFooter";
 
 export default function Home() {
   return (
-    <>
+    <DashboardProvider>
       <ProfileHeader />
 
       <main className="mx-auto flex w-full max-w-6xl flex-col gap-16 px-5 py-10 sm:px-8 sm:py-14">
@@ -40,7 +44,7 @@ export default function Home() {
           index="03"
           eyebrow="Shock builder"
           title="Stack the emergencies"
-          lede="Two are active in this run. The library is ordered by how often US households actually report each event."
+          lede="Toggle shocks to re-run the live Python engine. Ordering follows how often US households report each class of expense."
           id="shocks"
         >
           <ShockBuilder />
@@ -49,8 +53,8 @@ export default function Home() {
         <Section
           index="04"
           eyebrow="Why it breaks"
-          title="The layoff is survivable. The combination is not."
-          lede="A $2,400 repair would be a nuisance in a normal month. Landing in month 3 of an income loss, it is the difference between recovering and missing a payment."
+          title="Single shocks vs stacked shocks"
+          lede="Charts below are driven by POST /simulate — including pairwise compound runs for the matrix."
           id="why"
         >
           <div className="flex flex-col gap-4">
@@ -70,7 +74,7 @@ export default function Home() {
           index="05"
           eyebrow="How to improve"
           title="What actually moves the breaking point"
-          lede="Ranked by effect on the one number that matters — how long until a required payment cannot be made."
+          lede="Prevention levers come from the deterministic overage when severe risk triggers."
           id="improve"
         >
           <RecoveryComparison />
@@ -87,16 +91,7 @@ export default function Home() {
         </Section>
       </main>
 
-      <footer className="border-t border-line">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-5 py-6 text-[12px] text-ink-3 sm:px-8">
-          <span>
-            BreakPoint — short- and medium-term financial resilience under compound emergencies
-          </span>
-          <span className="tnum">
-            Demo data · Maya Restrepo is fictional
-          </span>
-        </div>
-      </footer>
-    </>
+      <DataFooter />
+    </DashboardProvider>
   );
 }

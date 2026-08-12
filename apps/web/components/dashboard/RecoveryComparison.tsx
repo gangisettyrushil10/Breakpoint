@@ -2,10 +2,8 @@
 
 import { useState } from "react";
 import { Card, CardTitle } from "@/components/ui/primitives";
-import { months } from "@/lib/format";
-import { recoveryActions } from "@/lib/mock/profile";
-
-const HORIZON = 12;
+import { money, months } from "@/lib/format";
+import { useDashboard } from "@/components/dashboard/DashboardProvider";
 
 const effortMeta = {
   low: { label: "Low effort", cls: "text-stable" },
@@ -14,13 +12,25 @@ const effortMeta = {
 } as const;
 
 export function RecoveryComparison() {
-  const [open, setOpen] = useState<string | null>("fund");
+  const { recoveryActions, result, months: horizon } = useDashboard();
+  const [open, setOpen] = useState<string | null>(null);
+
+  if (recoveryActions.length === 0) {
+    return (
+      <Card padded>
+        <p className="text-[14px] text-ink-3">Prevention plan unavailable until a run completes.</p>
+      </Card>
+    );
+  }
+
+  const overage = result?.breakingPoint.overageCents ?? 0;
+  const saveAction = recoveryActions.find((a) => a.id === "save");
 
   return (
     <Card padded={false}>
       <div className="p-5 pb-0">
         <CardTitle
-          aside={<span className="text-[11.5px] text-ink-3">Months until a payment is missed</span>}
+          aside={<span className="text-[11.5px] text-ink-3">From prevention engine</span>}
         >
           What each change buys you
         </CardTitle>
@@ -29,8 +39,8 @@ export function RecoveryComparison() {
       <div className="divide-y divide-line">
         {recoveryActions.map((action) => {
           const survives = action.monthsUntilMissedPayment === null;
-          const value = action.monthsUntilMissedPayment ?? HORIZON;
-          const width = (value / HORIZON) * 100;
+          const value = action.monthsUntilMissedPayment ?? horizon;
+          const width = (value / horizon) * 100;
           const isCurrent = action.id === "current";
           const isOpen = open === action.id;
 
@@ -82,7 +92,9 @@ export function RecoveryComparison() {
 
               {isOpen ? (
                 <div className="mt-2.5 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                  <span className={`text-[11px] uppercase tracking-wider ${effortMeta[action.effort].cls}`}>
+                  <span
+                    className={`text-[11px] uppercase tracking-wider ${effortMeta[action.effort].cls}`}
+                  >
                     {effortMeta[action.effort].label}
                   </span>
                   <p className="max-w-[62ch] text-[13px] leading-relaxed text-ink-2">
@@ -98,9 +110,21 @@ export function RecoveryComparison() {
       <div className="flex items-center gap-2 border-t border-line px-5 py-3">
         <span className="size-1.5 rounded-full bg-stable" />
         <p className="text-[12.5px] text-ink-3">
-          Raising the emergency fund by <span className="tnum text-ink-2">$2,500</span> is the
-          smallest single change that clears the{" "}
-          <span className="tnum text-ink-2">$2,046</span> shortfall outright.
+          {saveAction && overage > 0 ? (
+            <>
+              Raising the emergency fund by{" "}
+              <span className="tnum text-ink-2">
+                {money(result?.preventionPlan?.extraSavingsCentsNeeded ?? overage)}
+              </span>{" "}
+              clears the{" "}
+              <span className="tnum text-ink-2">{money(overage)}</span> overage from the
+              live breaking-point search.
+            </>
+          ) : result?.breakingPoint.triggered ? (
+            <>Prevention levers come from the deterministic overage in this run.</>
+          ) : (
+            <>No severe-risk trigger — keep the buffer and re-test with harder shocks.</>
+          )}
         </p>
       </div>
     </Card>
