@@ -38,6 +38,7 @@ export function ChatPanel({
   messages,
   onMessagesChange,
   onProfileChange,
+  onResultChange,
 }: {
   /** The shared working profile. Controlled — this panel never owns it. */
   profile: FinancialProfile;
@@ -47,6 +48,11 @@ export function ChatPanel({
   onMessagesChange: (messages: ChatMessage[]) => void;
   /** Fires when the agent edited the profile via `patch_profile`. */
   onProfileChange: (profile: FinancialProfile) => void;
+  /**
+   * Fires with the run describing the user's real situation, so a sibling panel
+   * can show a live score without issuing its own `/simulate` call.
+   */
+  onResultChange?: (result: SimulateResponse) => void;
 }) {
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -100,7 +106,10 @@ export function ChatPanel({
             case "simulate_run":
               // Which run describes the user's real situation is only settled at
               // the end; apply the same rule optimistically and let `done` win.
-              if (!event.hasScenarios) setResult(event.result);
+              if (!event.hasScenarios) {
+                setResult(event.result);
+                onResultChange?.(event.result);
+              }
               break;
 
             case "profile":
@@ -132,6 +141,7 @@ export function ChatPanel({
               setToolCalls(event.response.toolCalls);
               if (event.response.simulateResult) {
                 setResult(event.response.simulateResult);
+                onResultChange?.(event.response.simulateResult);
               }
               setUsage({
                 tokens: event.response.totalTokens,
@@ -154,7 +164,15 @@ export function ChatPanel({
         setSending(false);
       }
     },
-    [messages, profile, months, sending, onMessagesChange, onProfileChange]
+    [
+      messages,
+      profile,
+      months,
+      sending,
+      onMessagesChange,
+      onProfileChange,
+      onResultChange,
+    ]
   );
 
   return (

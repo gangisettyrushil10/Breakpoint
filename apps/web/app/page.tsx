@@ -48,6 +48,8 @@ export default function Home() {
           title="What if these things happened?"
           lede="Turn on the setbacks you want to test and everything on this page is worked out again. They are listed roughly in the order US households actually report them."
           id="shocks"
+          collapsible
+          openLabel="Let me try some what-ifs"
         >
           <ShockBuilder />
         </Section>
@@ -58,6 +60,8 @@ export default function Home() {
           title="One setback, or several at once"
           lede="A single piece of bad luck is usually survivable. The same setbacks landing close together often are not, because the first one uses up the savings that would have absorbed the second."
           id="why"
+          collapsible
+          openLabel="Show me why"
         >
           <div className="flex flex-col gap-4">
             <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
@@ -78,6 +82,8 @@ export default function Home() {
           title="What would actually have made a difference"
           lede="Two ways out, both worked out from exactly how far past the limit things went: money saved up beforehand, or spending stopped each month. If the amount you would need to cut is more than you could realistically cut, we say so instead of pretending."
           id="improve"
+          collapsible
+          openLabel="Show me what would help"
         >
           <RecoveryComparison />
         </Section>
@@ -88,6 +94,8 @@ export default function Home() {
           title="Where every number came from"
           lede="Nothing here is guessed or generated. If you disagree with something we assumed, change it and the whole page is worked out again."
           id="assumptions"
+          collapsible
+          openLabel="Show me the workings"
         >
           <AssumptionsPanel />
         </Section>

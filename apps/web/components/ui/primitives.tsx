@@ -10,6 +10,8 @@ export function Section({
   lede,
   children,
   id,
+  collapsible = false,
+  openLabel = "Show me the detail",
 }: {
   index: string;
   eyebrow: string;
@@ -17,9 +19,19 @@ export function Section({
   lede?: string;
   children: ReactNode;
   id?: string;
+  /**
+   * Hide the charts behind a disclosure, leaving only the heading and the
+   * plain-language summary.
+   *
+   * Six sections of charts opening at once is the fastest way to lose somebody
+   * who is already anxious about money. The verdict stays open because it is
+   * the answer; the workings fold away until asked for.
+   */
+  collapsible?: boolean;
+  openLabel?: string;
 }) {
-  return (
-    <section id={id} className="scroll-mt-8">
+  const heading = (
+    <>
       <div className="flex items-baseline gap-3">
         <span className="tnum text-[11px] text-ink-3">{index}</span>
         <span className="label text-accent">{eyebrow}</span>
@@ -30,7 +42,32 @@ export function Section({
       {lede ? (
         <p className="mt-2 max-w-[62ch] text-[15px] leading-relaxed text-ink-2">{lede}</p>
       ) : null}
-      <div className="mt-6 min-w-0">{children}</div>
+    </>
+  );
+
+  if (!collapsible) {
+    return (
+      <section id={id} className="scroll-mt-8">
+        {heading}
+        <div className="mt-6 min-w-0">{children}</div>
+      </section>
+    );
+  }
+
+  return (
+    <section id={id} className="scroll-mt-8">
+      {heading}
+      {/* Native <details> for the same reasons as Explain: keyboard support,
+          screen-reader semantics and find-in-page, none of it reimplemented. */}
+      <details className="section-detail mt-5">
+        <summary className="explain-summary text-[13px] text-ink-2">
+          <span className="explain-word">{openLabel}</span>
+          <span aria-hidden className="explain-mark">
+            +
+          </span>
+        </summary>
+        <div className="mt-6 min-w-0">{children}</div>
+      </details>
     </section>
   );
 }

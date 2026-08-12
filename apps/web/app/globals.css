@@ -141,6 +141,29 @@ body {
   color: var(--color-accent);
 }
 
+/* A collapsed section reads as a control, not as a dead heading. */
+.section-detail > summary {
+  display: inline-flex;
+  border: 1px solid var(--color-line);
+  background: var(--color-surface-1);
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.875rem;
+  transition: border-color 150ms ease;
+}
+
+.section-detail > summary:hover {
+  border-color: var(--color-line-strong);
+}
+
+.section-detail[open] > summary .explain-mark::after {
+  content: "";
+}
+
+.section-detail[open] > summary .explain-word::after {
+  content: " — hide";
+  color: var(--color-ink-3);
+}
+
 .explain-panel {
   display: block;
   margin-top: 0.625rem;
