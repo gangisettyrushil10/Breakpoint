@@ -1,5 +1,6 @@
 import logging
 import os
+import sys
 from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
@@ -25,8 +26,48 @@ logging.basicConfig(
 )
 
 
+def _check_openai_sdk() -> None:
+    """Warn loudly at startup if the installed openai package is too old.
+
+    The agent is built entirely on the Responses API, which only exists from
+    openai 2.x. On an older SDK every chat request raises `AttributeError` deep
+    in the provider, gets caught by the route's safe-error boundary, and reaches
+    the user as "the model service is unavailable" — a message that is correct,
+    deliberately uninformative, and impossible to act on.
+
+    That happens most often when the server is launched through a shim (pyenv
+    especially) that resolves to a different interpreter than the project venv,
+    so the deterministic half works perfectly and only the chat is broken.
+    Checking here turns a confusing runtime 502 into one obvious startup line.
+
+    A warning, not a crash: `/health` and `/simulate` are genuinely fine without
+    a usable SDK, and refusing to boot would take the working half down too.
+    """
+    try:
+        import openai
+    except ImportError:
+        logging.warning(
+            "openai is not installed — /agent/chat will fail. "
+            "The deterministic endpoints are unaffected."
+        )
+        return
+
+    version = getattr(openai, "__version__", "0")
+    if not hasattr(openai.OpenAI, "responses"):
+        logging.error(
+            "openai %s is too old for the Responses API that the agent needs "
+            "(2.0+). Chat will return 502 while the rest of the app works. "
+            "Interpreter in use: %s. If that is not this project's .venv, you "
+            "are probably running through a pyenv shim — start the server with "
+            "./.venv/bin/python -m uvicorn app.main:app",
+            version,
+            sys.executable,
+        )
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    _check_openai_sdk()
     yield
     client = getattr(app.state, "openai_client", None)
     if client is not None:

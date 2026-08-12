@@ -39,12 +39,14 @@ You need **Python 3.11+** and **Node 20+**. An OpenAI key is optional — withou
 
 ```bash
 cd services/api
-python3 -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8000
+python3 -m venv .venv
+./.venv/bin/pip install -r requirements.txt
+./.venv/bin/python -m uvicorn app.main:app --reload --port 8000
 ```
 
 Want the chat agent too? Before starting it, run `cp .env.example .env` and put an `OPENAI_API_KEY` in it.
+
+> **Why the explicit `./.venv/bin/` paths rather than `activate`?** If you use pyenv, its shims can sit ahead of the activated venv on `PATH`, so a bare `uvicorn` silently runs against a different Python with different packages installed. The failure is nasty: the deterministic half of the app works fine and only the chat breaks, with a message that deliberately hides the cause. Calling the venv's binaries directly cannot be shadowed. If you prefer `activate`, run `pyenv shell --unset` first and check `which uvicorn` points inside `.venv`.
 
 **Terminal 2 — the UI:**
 
@@ -271,13 +273,13 @@ breakpoint/
 
 ## Testing
 
-The engine suite (241 tests):
+The engine suite (254 tests):
 
 ```bash
-cd services/api && source .venv/bin/activate && pytest
+cd services/api && ./.venv/bin/python -m pytest
 ```
 
-The web suite (29 tests):
+The web suite (35 tests):
 
 ```bash
 cd apps/web && npm test
