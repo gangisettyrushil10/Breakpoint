@@ -123,20 +123,22 @@ Devin banks **$690 every month** and has never missed a bill. The dashboard says
 | Monthly buffer | **+$690** |
 | Emergency runway | **1.11 months** |
 
-Now stack emergencies with the shock builder. Individually, Devin absorbs all of them:
+The dashboard opens with **Layoff** and **Vehicle repair** already switched on. Use the shock builder to turn things on and off one at a time — every number on the page is recalculated each time.
 
-| Shock | Result |
+| What you switch on | Result |
 |---|---|
-| $750 car repair | survives |
-| $1,500 medical bill | survives |
-| Rent hike, +$200/mo | survives |
-| **Layoff** | **breaks in month 1, $810 past the credit line** |
+| Vehicle repair, $2,400 | survives |
+| Medical expense, $1,800 | survives |
+| Rent increase, +$250/mo for the rest of the year | survives |
+| **Layoff** | **a bill goes unpaid in month 5, $1,490 past the credit line** |
 
-**One job loss is the entire story.** Everything else is noise.
+**One job loss is the entire story.** Every other setback on that list, Devin absorbs without blinking — and the layoff still breaks them *even though the model assumes $1,200/month of replacement income coming in the whole time.*
 
-Then the prevention plan lands the punch — to have survived that layoff, Devin needed **$810 more in savings, or to cut $405/month**. But their *entire* discretionary and subscription spending is **$375/month**. Cancelling literally everything fun would not have been enough. The plan reports `monthlyCutFeasible: false`.
+The prevention plan then prices the escape: **$1,490 saved up beforehand, or $248/month cut** for the five months leading up to it. Devin's entire subscriptions-and-spending-money budget is **$375/month**, so it is *just* possible — it costs them two-thirds of everything discretionary, for most of a year, to survive one ordinary event.
 
-That is the thesis of the product in one screen: **a person who saves money every month, has no missed payments, and would look fine to any credit model is one ordinary event away from the cliff — and cannot budget their way out of it.**
+That is the thesis of the product in one screen: **a person who saves money every single month, has never missed a payment, and would look completely fine to any credit model is one ordinary event away from the edge.**
+
+> **A quirk worth knowing:** switch *every* shock off and the page still reports a breaking point. An empty shock list is the signal for the engine to go hunting on its own — it searches its built-in presets for the smallest thing that would break you, and reports that instead of a calm baseline. See [Known issues](#known-issues).
 
 Finally, open the chat tab and ask:
 
@@ -297,7 +299,9 @@ Then apply the schema with `supabase db push`. The profile and chat transcript a
 ## Known issues
 
 - **`availableCreditCents` is read two different ways.** The breaking-point search ([`scoring.py`](services/api/app/simulation/scoring.py)) and the prevention plan treat it as the **total credit line**, while the resilience subscore, the dashboard's `creditLimitCents`, and the intake form's own hint treat it as **remaining headroom**. Until this is reconciled, enter your total credit line in that field — following the form hint instead can report a breaking point in month 0 before any emergency is applied.
-- **The preset stress test is gentle.** The default layoff is 2 months with no replacement income, so the open-ended "what would break me?" search can report no breaking point for someone with barely a month of runway. When nothing breaks, the reply should name what was actually tested.
+- **An empty shock list means "go hunting", not "no shocks".** Switching every toggle off sends `scenarios: []`, which makes the engine search its own presets for the smallest thing that would break you — so the page reports a breaking point when the user believes they asked for a calm baseline. The two states need to be told apart.
+- **The engine presets and the dashboard's shocks disagree.** The built-in preset layoff is 2 months with no replacement income; the dashboard sends 5 months with $1,200/mo. Both are defensible, but the same person gets two different breaking points depending on which path ran, and neither screen says which assumptions were used.
+- **The preset stress test is gentle.** That 2-month preset layoff means the open-ended "what would break me?" search can report no breaking point for someone with barely a month of runway. When nothing breaks, the reply should name what was actually tested.
 
 ## License
 
