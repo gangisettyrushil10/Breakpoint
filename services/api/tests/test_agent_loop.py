@@ -239,7 +239,11 @@ def test_tool_definitions_use_the_flat_responses_shape() -> None:
     drive(model, user("Hello"), maya_profile())
 
     tools = model.calls[0]["tools"]
-    assert {tool["name"] for tool in tools} == {"simulate", "patch_profile"}
+    assert {tool["name"] for tool in tools} == {
+        "simulate",
+        "patch_profile",
+        "estimate_commute_cost",
+    }
     for tool in tools:
         assert tool["type"] == "function"
         assert "parameters" in tool

@@ -36,7 +36,7 @@ from app.agent.grounding import build_ledger
 from app.agent.guardrails import SentenceGate
 from app.agent.provider import ModelClient, ProviderError, ToolCall, tool_result_item
 from app.agent.schemas import ChatMessage, GuardrailReport, ToolCallRecord
-from app.agent.tools import registry
+from app.agent.tools import commute_cost, registry
 from app.domain.financial_profile import FinancialProfile
 from app.routes.simulate import SimulateResponse
 
@@ -120,6 +120,11 @@ class _TurnState:
     tool_defaults: dict[str, dict]
     deadline: float
     simulate_runs: list[tuple[dict, SimulateResponse]] = field(default_factory=list)
+    #: Web-backed cost estimates made this turn. Deliberately NOT cleared when
+    #: the profile is edited: the usual sequence is estimate → user agrees →
+    #: patch_profile → reply, and clearing would strip the ledger of the very
+    #: figure the confirming reply has to quote.
+    lookup_results: list[dict] = field(default_factory=list)
     tool_calls: list[ToolCallRecord] = field(default_factory=list)
     final_text: str = ""
     stop_reason: str = "completed"
@@ -155,6 +160,7 @@ class _TurnState:
             simulate_results=self.results,
             tool_arguments=[call.arguments for call in self.tool_calls],
             user_messages=self.user_messages,
+            lookup_results=self.lookup_results,
         )
 
 
@@ -551,6 +557,9 @@ class AgentLoop:
             state.simulate_runs.clear()
             if sink is not None:
                 await sink.emit(ProfileEvent(profile=state.profile.model_dump()))
+
+        if name == commute_cost.TOOL_NAME:
+            state.lookup_results.append(payload)
 
         if name == "simulate":
             result = SimulateResponse.model_validate(payload["result"])

@@ -12,7 +12,7 @@ whole request.
 
 from typing import Any, Callable, Protocol
 
-from app.agent.tools import patch_profile, simulate
+from app.agent.tools import commute_cost, patch_profile, simulate
 from app.domain.financial_profile import FinancialProfile
 
 
@@ -104,6 +104,15 @@ REGISTRY: dict[str, Tool] = {
         input_schema=patch_profile.input_schema,
         handler=patch_profile.handle,
         mutates_profile=True,
+    ),
+    # Reaches the network, unlike its neighbours. It cannot change the profile:
+    # a looked-up figure is a proposal the user confirms, and confirming means
+    # the model calling patch_profile with it.
+    commute_cost.TOOL_NAME: Tool(
+        name=commute_cost.TOOL_NAME,
+        description=commute_cost.TOOL_DESCRIPTION,
+        input_schema=commute_cost.input_schema,
+        handler=commute_cost.handle,
     ),
 }
 

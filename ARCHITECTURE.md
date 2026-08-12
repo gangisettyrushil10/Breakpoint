@@ -313,3 +313,6 @@ Killer line for the vision:
 | 2026-08-12 | Profile stored as `jsonb`, not typed columns — pydantic stays the one canonical schema |
 | 2026-08-12 | Sign-in optional; signed out the app is unchanged and nothing leaves the browser |
 | 2026-08-12 | Email + password auth, not magic links — no SMTP dependency to sign in |
+| 2026-08-12 | Web lookup supplies a *price* only; Python does every multiplication |
+| 2026-08-12 | Looked-up values are proposals: shown with a citation, written only on user confirmation |
+| 2026-08-12 | Lookup facts enter the grounding ledger, but the tool cannot mutate the profile |

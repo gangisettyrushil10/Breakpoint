@@ -170,6 +170,10 @@ The interesting part of this repo is not the financial math. It is **constrainin
 
 **The eval set tests permission, not just prohibition.** It caught a guardrail blocking `401(k)` as an ungrounded number — a false positive that would have stopped the agent giving the exact safety advice it exists to give.
 
+**Outside data arrives as a proposal, not a fact.** Tell it *"I drive 24 miles each way"* and it looks up the current local fuel price — but the model never does the multiplication, because a number it worked out itself would be exactly the fabrication everything above exists to prevent. Python computes the monthly cost from the searched price, so the figure is a tool result the ledger can vouch for. It is then shown with its citation and its assumptions and **written to the budget only once the user agrees**:
+
+> Your estimated monthly fuel cost is **$137.80**. That assumes 24 miles each way, 5 days a week, 28 mpg, and **$3.71 per gallon, from AAA Fuel Prices for North Carolina, as of August 12 2026**. This is fuel only — not maintenance, insurance, or parking. Does $137.80/month look right to you?
+
 Full reasoning, including what was deliberately rejected, is in [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ---
@@ -290,7 +294,7 @@ The agent suite runs the **full agent loop against a scripted model** — no net
 | 2.5 | Grounding ledger, availability + deploy safety | ✅ Complete |
 | 2.6 | Shared profile, intake form, SSE streaming, eval set | ✅ Complete |
 | 2.7 | Optional accounts, Postgres persistence, RLS | ✅ Complete |
-| 3 | Research tools — gas prices, Fair Market Rents, local events | ⬜ Not started |
+| 3 | Research tools — gas prices ✅, Fair Market Rents, local events | 🟡 Started |
 
 ## Optional: accounts
 

@@ -272,10 +272,43 @@ def _echoed_from_arguments(arguments: object) -> set[float]:
     return echoed
 
 
+def facts_from_lookup(result: dict, prefix: str = "") -> list[Fact]:
+    """Every number a reply may quote from one web-backed cost estimate.
+
+    These are a weaker class of fact than a simulation result: Python did the
+    multiplication, but the price underneath came off a third-party page and
+    could be stale or wrong. They are admitted anyway, because the alternative is
+    worse — the guardrail would withhold the very reply that shows the user the
+    estimate, which is the whole interaction. What protects the budget is not the
+    ledger but the confirmation step: nothing reaches the profile until the user
+    says yes.
+    """
+    if not result.get("ok"):
+        return []
+
+    facts = _money(result.get("monthlyCostCents"), f"{prefix}.commute.monthlyCost")
+
+    price = result.get("fuelPrice") or {}
+    facts += _money(price.get("amountCents"), f"{prefix}.commute.fuelPrice")
+
+    # The assumptions are quotable too: a reply saying "assuming 24.4 mpg" is
+    # being transparent, and should not be punished for it.
+    assumptions = result.get("assumptions") or {}
+    for key in ("milesEachWay", "daysPerWeek", "milesPerGallon", "monthlyMiles"):
+        value = assumptions.get(key)
+        if isinstance(value, (int, float)) and not isinstance(value, bool):
+            facts.append(
+                Fact(value=float(value), kind="number", label=f"{prefix}.commute.{key}")
+            )
+
+    return facts
+
+
 def build_ledger(
     simulate_results: Iterable[SimulateResponse] = (),
     tool_arguments: Iterable[dict] = (),
     user_messages: Iterable[str] = (),
+    lookup_results: Iterable[dict] = (),
 ) -> Ledger:
     """Assemble everything the reply is allowed to say.
 
@@ -285,6 +318,8 @@ def build_ledger(
     facts: list[Fact] = []
     for index, result in enumerate(simulate_results):
         facts.extend(facts_from_result(result, prefix=f"run{index}"))
+    for index, result in enumerate(lookup_results):
+        facts.extend(facts_from_lookup(result, prefix=f"lookup{index}"))
 
     echoed: set[float] = set()
     for arguments in tool_arguments:
