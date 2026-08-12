@@ -61,9 +61,13 @@ export function ProfileHeader() {
           </Link>
           <Link
             href="/chat"
-            className="rounded-lg border border-line bg-surface-1 px-3.5 py-2 text-[13px] text-ink-2 hover:border-line-strong hover:text-ink"
+            className={
+              hasOwnProfile
+                ? "rounded-lg bg-accent px-3.5 py-2 text-[13px] font-medium text-bg transition-opacity hover:opacity-90"
+                : "rounded-lg border border-line bg-surface-1 px-3.5 py-2 text-[13px] text-ink-2 hover:border-line-strong hover:text-ink"
+            }
           >
-            Ask about this →
+            Talk to it →
           </Link>
           <Link
             href="/account"
