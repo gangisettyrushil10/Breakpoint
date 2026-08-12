@@ -41,10 +41,10 @@ You need **Python 3.11+** and **Node 20+**. An OpenAI key is optional — withou
 cd services/api
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-
-cp .env.example .env      # optional: add OPENAI_API_KEY for the chat agent
 uvicorn app.main:app --reload --port 8000
 ```
+
+Want the chat agent too? Before starting it, run `cp .env.example .env` and put an `OPENAI_API_KEY` in it.
 
 **Terminal 2 — the UI:**
 
@@ -267,9 +267,16 @@ breakpoint/
 
 ## Testing
 
+The engine suite (241 tests):
+
 ```bash
-cd services/api && source .venv/bin/activate && pytest    # 241 tests
-cd apps/web && npm test                                   # 24 tests
+cd services/api && source .venv/bin/activate && pytest
+```
+
+The web suite (29 tests):
+
+```bash
+cd apps/web && npm test
 ```
 
 The agent suite runs the **full agent loop against a scripted model** — no network, no API key, no flake. Guardrails are covered by an adversarial eval set that tests both prohibition and permission.
