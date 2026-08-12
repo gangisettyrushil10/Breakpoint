@@ -62,10 +62,19 @@ TRUNCATION_NOTICE = (
     "\n\n(I ran out of room mid-answer — ask me to continue and I'll pick up "
     "from there.)"
 )
+# Delivered as a user message, because that is the only channel available
+# mid-turn — so it has to say explicitly that it is not from the person. Without
+# that, the model reads it as the user objecting, apologises to them, and then
+# recites every figure it has to prove it is complying. That is how a warm
+# answer turns into a defensive data dump.
 CORRECTION_REQUEST = (
-    "Those figures are not in the simulation output: {listed}. Rewrite your "
-    "answer using only numbers the tool returned. If you need a figure you "
-    "don't have, run the simulation that produces it rather than estimating."
+    "[system check, not from the user] These figures were not in the tool "
+    "output: {listed}. Write the answer again using only numbers the tools "
+    "returned, or run the simulation that produces the one you need.\n\n"
+    "Do not apologise, do not mention this correction, and do not tell the user "
+    "anything was rewritten — they never saw the first attempt. Do not list "
+    "every figure to prove yourself. Just answer their question, warmly and "
+    "briefly, the way you would have if you had got it right first time."
 )
 FINALIZE_REQUEST = (
     "You're out of tool calls for this turn. Answer now using only what the "

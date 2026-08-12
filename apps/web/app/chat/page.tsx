@@ -20,12 +20,12 @@ export default function ChatPage() {
                 agent
               </span>
             </div>
-            <h1 className="mt-2.5 text-[19px] font-semibold tracking-tight">
-              Explain my resilience
+            <h1 className="mt-2.5 text-[22px] font-semibold tracking-tight">
+              Talk it through
             </h1>
-            <p className="mt-0.5 max-w-[62ch] text-[13px] text-ink-2">
-              The assistant can only read your budget by running the simulation. It
-              does not estimate numbers.
+            <p className="mt-1 max-w-[54ch] text-[15px] leading-relaxed text-ink-2">
+              Tell it about your money in your own words. Everything it says is
+              worked out with a calculator, not guessed.
             </p>
           </div>
 

@@ -175,8 +175,12 @@ export function ChatPanel({
     ]
   );
 
+  // One column, not two. This used to sit the raw engine output in a sticky
+  // sidebar — which, once ChatSurface added the budget panel, made three columns
+  // of figures competing for attention around a conversation. The raw output is
+  // still one click away below; it is evidence, not the point.
   return (
-    <div className="grid min-h-0 gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
+    <div className="flex min-h-0 flex-col gap-4">
       <div className="flex min-h-0 min-w-0 flex-col gap-4">
         <div
           className="flex min-h-[52vh] flex-col gap-5"
@@ -240,24 +244,37 @@ export function ChatPanel({
               }
             }}
             placeholder="Ask what your budget can absorb…"
-            className="min-w-0 flex-1 resize-none rounded-lg border border-line bg-surface-1 px-3.5 py-2.5 text-[14.5px] text-ink placeholder:text-ink-3 disabled:opacity-60"
+            className="min-w-0 flex-1 resize-none rounded-lg border border-line bg-surface-1 px-3.5 py-2.5 text-[15.5px] text-ink placeholder:text-ink-3 disabled:opacity-60"
           />
           <button
             type="submit"
             disabled={sending || !input.trim()}
-            className="rounded-lg bg-accent px-4 py-2.5 text-[13.5px] font-medium text-bg disabled:cursor-not-allowed disabled:opacity-40"
+            className="rounded-lg bg-accent px-4 py-2.5 text-[15px] font-medium text-bg disabled:cursor-not-allowed disabled:opacity-40"
           >
             {sending ? "…" : "Send"}
           </button>
         </form>
       </div>
 
-      <EnginePanel
-        result={result}
-        toolCalls={toolCalls}
-        note={guardrailNote}
-        usage={usage}
-      />
+      {/* Closed by default. Someone anxious about rent does not need a token
+          count; someone checking whether the numbers are real does, and it is
+          one click away for them. */}
+      <details className="section-detail">
+        <summary className="explain-summary text-[13px] text-ink-3">
+          <span className="explain-word">Show the engine&rsquo;s raw output</span>
+          <span aria-hidden className="explain-mark">
+            +
+          </span>
+        </summary>
+        <div className="mt-3">
+          <EnginePanel
+            result={result}
+            toolCalls={toolCalls}
+            note={guardrailNote}
+            usage={usage}
+          />
+        </div>
+      </details>
     </div>
   );
 }
@@ -271,8 +288,8 @@ function EmptyState({
 }) {
   return (
     <div className="rounded-lg border border-line bg-surface-1 p-5">
-      <h2 className="text-[15px] font-medium">Ask about your money situation</h2>
-      <p className="mt-1.5 max-w-[62ch] text-[13.5px] leading-relaxed text-ink-2">
+      <h2 className="text-[18px] font-semibold">Ask about your money situation</h2>
+      <p className="mt-2 max-w-[58ch] text-[15px] leading-relaxed text-ink-2">
         Every number in a reply comes from the same deterministic engine behind the
         dashboard — the assistant runs it and explains the result, it never
         estimates.
@@ -284,7 +301,7 @@ function EmptyState({
             type="button"
             disabled={disabled}
             onClick={() => onPick(starter)}
-            className="rounded-full border border-line bg-surface-2 px-3 py-1.5 text-[12.5px] text-ink-2 hover:border-line-strong hover:text-ink disabled:opacity-50"
+            className="rounded-full border border-line bg-surface-2 px-3 py-1.5 text-[13.5px] text-ink-2 hover:border-line-strong hover:text-ink disabled:opacity-50"
           >
             {starter}
           </button>
@@ -307,7 +324,7 @@ function EnginePanel({
   usage: { tokens: number; calls: number } | null;
 }) {
   return (
-    <aside className="flex h-fit flex-col gap-4 rounded-lg border border-line bg-surface-1 p-4 lg:sticky lg:top-4">
+    <aside className="flex h-fit flex-col gap-4 rounded-lg border border-line bg-surface-1 p-4">
       <h2 className="label">Engine output</h2>
 
       {result ? (

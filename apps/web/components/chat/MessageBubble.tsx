@@ -15,7 +15,7 @@ export function MessageBubble({
         <div className="label mb-1.5">{isUser ? "You" : "BreakPoint"}</div>
         <div
           className={[
-            "min-w-0 rounded-lg border px-4 py-3 text-[14.5px] leading-relaxed",
+            "min-w-0 rounded-lg border px-4 py-3 text-[16px] leading-[1.65]",
             isUser
               ? "border-line-strong bg-surface-2 text-ink"
               : "border-line bg-surface-1 text-ink",
