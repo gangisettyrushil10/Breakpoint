@@ -11,6 +11,13 @@ import type {
 } from "@/lib/api/types";
 import { money, months as fmtMonths } from "@/lib/format";
 
+/** A priced hypothetical: what the score would be, not what it is. */
+export interface WhatIfComparison {
+  scoreBefore: number;
+  scoreAfter: number;
+  changed: string[];
+}
+
 const STARTERS = [
   "How resilient is my budget right now?",
   "What would a layoff plus a car repair do to me?",
@@ -39,6 +46,7 @@ export function ChatPanel({
   onMessagesChange,
   onProfileChange,
   onResultChange,
+  onWhatIf,
 }: {
   /** The shared working profile. Controlled — this panel never owns it. */
   profile: FinancialProfile;
@@ -53,6 +61,8 @@ export function ChatPanel({
    * can show a live score without issuing its own `/simulate` call.
    */
   onResultChange?: (result: SimulateResponse) => void;
+  /** A hypothetical was priced. Nothing was saved. */
+  onWhatIf?: (comparison: WhatIfComparison) => void;
 }) {
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -118,6 +128,16 @@ export function ChatPanel({
               onProfileChange(event.profile);
               break;
 
+            case "what_if":
+              // Explicitly NOT a profile change. Shown beside the score as a
+              // "this is what that would do", and cleared on the next question.
+              onWhatIf?.({
+                scoreBefore: event.scoreBefore,
+                scoreAfter: event.scoreAfter,
+                changed: event.changed,
+              });
+              break;
+
             case "sentence":
               setPhase("writing");
               setStreamText((prev) => prev + event.text);
@@ -172,6 +192,7 @@ export function ChatPanel({
       onMessagesChange,
       onProfileChange,
       onResultChange,
+      onWhatIf,
     ]
   );
 

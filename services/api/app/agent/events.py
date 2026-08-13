@@ -56,6 +56,21 @@ class SimulateRunEvent:
 
 
 @dataclass(frozen=True)
+class WhatIfEvent:
+    """A hypothetical comparison finished.
+
+    Deliberately not a `ProfileEvent`: nothing has changed, and a client that
+    treated this as an edit would show the user a budget they never agreed to.
+    Carries only what a panel needs to render a before → after.
+    """
+
+    scoreBefore: int
+    scoreAfter: int
+    changed: Any
+    type: Literal["what_if"] = "what_if"
+
+
+@dataclass(frozen=True)
 class ProfileEvent:
     """The agent edited the profile via a `mutates_profile` tool."""
 
@@ -106,6 +121,7 @@ AgentEvent = (
     StartEvent
     | ToolCallEvent
     | SimulateRunEvent
+    | WhatIfEvent
     | ProfileEvent
     | SentenceEvent
     | RetractEvent

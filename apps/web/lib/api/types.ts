@@ -178,6 +178,16 @@ export type AgentEvent =
       arguments: Record<string, unknown>;
       ok: boolean;
     }
+  /**
+   * A hypothetical was priced. Nothing changed — this must not be handled like
+   * a `profile` event, or the app would show a budget the user never agreed to.
+   */
+  | {
+      type: "what_if";
+      scoreBefore: number;
+      scoreAfter: number;
+      changed: string[];
+    }
   | {
       type: "simulate_run";
       index: number;

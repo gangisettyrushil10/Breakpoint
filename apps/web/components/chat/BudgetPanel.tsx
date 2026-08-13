@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Explain } from "@/components/ui/Explain";
+import type { WhatIfComparison } from "@/components/chat/ChatPanel";
 import { budgetProgress } from "@/lib/budget-progress";
 import { money } from "@/lib/format";
 import type { FinancialProfile, SimulateResponse } from "@/lib/api/types";
@@ -81,12 +82,42 @@ function ScoreDial({ score }: { score: number | null }) {
   );
 }
 
+function WhatIfRow({ comparison }: { comparison: WhatIfComparison }) {
+  const worse = comparison.scoreAfter < comparison.scoreBefore;
+  const same = comparison.scoreAfter === comparison.scoreBefore;
+  const tone = same
+    ? "text-ink-2"
+    : worse
+      ? "text-critical"
+      : "text-stable";
+
+  return (
+    <div className="mt-4 rounded-md border border-accent/30 bg-accent-dim px-3 py-2.5">
+      <div className="text-[11.5px] text-ink-3">If that happened</div>
+      <div className="mt-1 flex items-baseline gap-2">
+        <span className="tnum text-[15px] text-ink-2">{comparison.scoreBefore}</span>
+        <span aria-hidden className="text-[13px] text-ink-3">
+          →
+        </span>
+        <span className={`tnum text-[19px] font-medium ${tone}`}>
+          {comparison.scoreAfter}
+        </span>
+      </div>
+      {/* Said explicitly, because a number moving on screen reads as something
+          having happened. Nothing has. */}
+      <div className="mt-1 text-[11.5px] text-ink-3">Not saved — just a test</div>
+    </div>
+  );
+}
+
 export function BudgetPanel({
   profile,
   result,
+  whatIf,
 }: {
   profile: FinancialProfile;
   result: SimulateResponse | null;
+  whatIf?: WhatIfComparison | null;
 }) {
   const progress = useMemo(() => budgetProgress(profile), [profile]);
 
@@ -118,6 +149,8 @@ export function BudgetPanel({
             />
           </div>
         </div>
+
+        {whatIf ? <WhatIfRow comparison={whatIf} /> : null}
       </div>
 
       <div className="rounded-lg border border-line bg-surface-1 p-5">

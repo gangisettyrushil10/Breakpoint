@@ -29,6 +29,7 @@ from app.agent.events import (
     RetractEvent,
     SentenceEvent,
     SimulateRunEvent,
+    WhatIfEvent,
     StartEvent,
     ToolCallEvent,
 )
@@ -577,6 +578,14 @@ class AgentLoop:
 
         if name == what_if.TOOL_NAME:
             state.what_if_results.append(payload)
+            if sink is not None:
+                await sink.emit(
+                    WhatIfEvent(
+                        scoreBefore=payload["score"]["before"],
+                        scoreAfter=payload["score"]["after"],
+                        changed=payload.get("changed", []),
+                    )
+                )
 
         if name == "simulate":
             result = SimulateResponse.model_validate(payload["result"])

@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 import Link from "next/link";
-import { ChatPanel } from "@/components/chat/ChatPanel";
+import { ChatPanel, type WhatIfComparison } from "@/components/chat/ChatPanel";
 import { BudgetPanel } from "@/components/chat/BudgetPanel";
 import { useProfile } from "@/components/ProfileProvider";
 import type { SimulateResponse } from "@/lib/api/types";
@@ -26,10 +26,15 @@ export function ChatSurface() {
   } = useProfile();
 
   const [result, setResult] = useState<SimulateResponse | null>(null);
-  const onResultChange = useCallback(
-    (next: SimulateResponse) => setResult(next),
-    []
-  );
+  const [whatIf, setWhatIf] = useState<WhatIfComparison | null>(null);
+  const onResultChange = useCallback((next: SimulateResponse) => {
+    setResult(next);
+    // A fresh reading of the real budget supersedes any hypothetical: leaving
+    // the old comparison up would pair a stale "if that happened" with numbers
+    // it was never computed against.
+    setWhatIf(null);
+  }, []);
+  const onWhatIf = useCallback((next: WhatIfComparison) => setWhatIf(next), []);
 
   // Rendering the panel before storage is read would start the conversation
   // against the demo profile and then swap it underneath the user.
@@ -66,9 +71,10 @@ export function ChatSurface() {
           onMessagesChange={setMessages}
           onProfileChange={setProfile}
           onResultChange={onResultChange}
+          onWhatIf={onWhatIf}
         />
 
-        <BudgetPanel profile={profile} result={result} />
+        <BudgetPanel profile={profile} result={result} whatIf={whatIf} />
       </div>
     </div>
   );
