@@ -39,11 +39,17 @@ def moderate_profile_payload() -> dict:
 
 
 def already_over_limit_profile_payload() -> dict:
-    """Existing credit card debt already exceeds available credit before any shock."""
+    """A card with nothing left to draw on, before any shock.
+
+    `availableCreditCents` is headroom, so "over the limit" is not something the
+    field can express — zero headroom is the real condition, and it is the one
+    the prevention plan cannot help with: this engine never repays existing
+    debt, so no amount of future saving reopens a maxed card.
+    """
     payload = base_payload()
     payload["income"]["monthlyTakeHomeCents"] = 330_000
     payload["savings"]["liquidCents"] = 50_000
-    payload["debt"]["availableCreditCents"] = 20_000
+    payload["debt"]["availableCreditCents"] = 0
     payload["debt"]["creditCardBalanceCents"] = 180_000
     return payload
 
@@ -136,7 +142,10 @@ def test_extra_savings_and_infeasible_cut_for_large_shock() -> None:
     schedule = layoff(start_month=0, duration_months=3, replacement_income_cents=0)
     result = run_months(boosted_profile, boosted_start, months=3, schedule=schedule)
     for month_result in result.months[: breaking_point.monthIndex + 1]:
-        assert month_result.state.creditCardBalanceCents <= boosted_profile.debt.availableCreditCents
+        assert month_result.state.creditCardBalanceCents <= (
+            boosted_profile.debt.creditCardBalanceCents
+            + boosted_profile.debt.availableCreditCents
+        )
 
 
 def test_extra_savings_and_feasible_cut_for_small_shock() -> None:
@@ -165,7 +174,10 @@ def test_extra_savings_and_feasible_cut_for_small_shock() -> None:
     hike_schedule = rent_hike(start_month=0, duration_months=5, increase_cents=12_000)
     result = run_months(boosted_profile, boosted_start, months=5, schedule=hike_schedule)
     for month_result in result.months:
-        assert month_result.state.creditCardBalanceCents <= boosted_profile.debt.availableCreditCents
+        assert month_result.state.creditCardBalanceCents <= (
+            boosted_profile.debt.creditCardBalanceCents
+            + boosted_profile.debt.availableCreditCents
+        )
 
     # Prove monthlyCutCentsNeeded prevents the breaking point when applied every month.
     cut_schedule = merge_schedules(
@@ -178,4 +190,7 @@ def test_extra_savings_and_feasible_cut_for_small_shock() -> None:
     )
     cut_result = run_months(profile, start, months=5, schedule=cut_schedule)
     for month_result in cut_result.months:
-        assert month_result.state.creditCardBalanceCents <= profile.debt.availableCreditCents
+        assert month_result.state.creditCardBalanceCents <= (
+            profile.debt.creditCardBalanceCents
+            + profile.debt.availableCreditCents
+        )

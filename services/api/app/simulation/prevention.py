@@ -38,7 +38,13 @@ def build_prevention_plan(
     assert overage is not None and month_index is not None
 
     cuttable = profile.expenses.discretionaryCents + profile.expenses.subscriptionsCents
-    already_over_limit = profile.debt.creditCardBalanceCents > profile.debt.availableCreditCents
+
+    # With `availableCreditCents` meaning headroom rather than the whole line,
+    # being *over* the limit is not expressible — the field cannot go negative.
+    # The condition this flag exists to catch is having nothing left to draw, and
+    # the plan below cannot help there: this engine never repays existing debt,
+    # so no amount of future saving reopens a card that is already maxed.
+    already_over_limit = profile.debt.availableCreditCents == 0
 
     if already_over_limit:
         return PreventionPlan(

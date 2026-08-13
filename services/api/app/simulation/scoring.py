@@ -78,8 +78,22 @@ def _triggers_severe_risk(
     )
     result = run_months(profile, start, months, schedule)
 
+    # `availableCreditCents` is headroom — what could still be drawn — not the
+    # whole line. The ceiling is therefore what is already owed plus what is
+    # left, which is the same definition the credit subscore above, the
+    # dashboard's `creditLimitCents`, and the intake form's own hint all use.
+    #
+    # Reading it as the ceiling (the previous behaviour) reported anyone whose
+    # balance exceeded their remaining headroom as already broken in month 0,
+    # before a single emergency was applied — a $2,850 balance with $1,900 left
+    # to draw "broke" instantly. That is an ordinary way to hold a credit card,
+    # not a financial emergency.
+    credit_limit = (
+        profile.debt.creditCardBalanceCents + profile.debt.availableCreditCents
+    )
+
     for month_result in result.months:
-        overage = month_result.state.creditCardBalanceCents - profile.debt.availableCreditCents
+        overage = month_result.state.creditCardBalanceCents - credit_limit
         if overage > 0:
             return month_result.monthIndex, overage
 
