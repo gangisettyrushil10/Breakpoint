@@ -243,6 +243,7 @@ def test_tool_definitions_use_the_flat_responses_shape() -> None:
         "simulate",
         "patch_profile",
         "estimate_commute_cost",
+        "what_if",
     }
     for tool in tools:
         assert tool["type"] == "function"

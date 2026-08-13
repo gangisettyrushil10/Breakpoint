@@ -56,12 +56,18 @@ class Fact:
 
     @property
     def key(self) -> str:
-        """The label without its run prefix — `run0.resilience.score` -> `resilience.score`.
+        """The label without its source prefix — `run0.resilience.score` becomes
+        `resilience.score`, and `whatif2.resilience.score` does too.
 
-        Multiple simulate calls in one turn are namespaced so we can tell them
-        apart, but matching cares only about which field a value came from.
+        Facts from one turn are namespaced by where they came from (`run0`,
+        `lookup0`, `whatif0`) so we can tell them apart, but matching cares only
+        about which field a value describes. The pattern covers every source
+        rather than just `run`: a fact whose prefix survives here can never
+        satisfy the keyed checks in `_matches`, so a score from a hypothetical
+        comparison would be silently unquotable — present in the ledger and
+        rejected by the guardrail anyway.
         """
-        return re.sub(r"^run\d+\.", "", self.label)
+        return re.sub(r"^[a-z]+\d+\.", "", self.label)
 
 
 @dataclass
@@ -291,6 +297,21 @@ def facts_from_lookup(result: dict, prefix: str = "") -> list[Fact]:
     price = result.get("fuelPrice") or {}
     facts += _money(price.get("amountCents"), f"{prefix}.commute.fuelPrice")
 
+    # The "if the price moved" arm, when one was asked for. Both the new total
+    # and the movement, since a reply will quote either.
+    adjusted = result.get("ifPriceChanges") or {}
+    facts += _money(
+        adjusted.get("monthlyCostCents"), f"{prefix}.commute.adjustedMonthlyCost"
+    )
+    facts += _money(
+        adjusted.get("fuelPricePerGallonCents"), f"{prefix}.commute.adjustedFuelPrice"
+    )
+    change = adjusted.get("monthlyCostChangeCents")
+    facts += _money(change, f"{prefix}.commute.monthlyCostChange")
+    if isinstance(change, int):
+        facts += _money(abs(change), f"{prefix}.commute.monthlyCostChangeMagnitude")
+    facts += _money(adjusted.get("priceChangeCents"), f"{prefix}.commute.priceChange")
+
     # The assumptions are quotable too: a reply saying "assuming 24.4 mpg" is
     # being transparent, and should not be punished for it.
     assumptions = result.get("assumptions") or {}
@@ -304,11 +325,106 @@ def facts_from_lookup(result: dict, prefix: str = "") -> list[Fact]:
     return facts
 
 
+def facts_from_what_if(result: dict, prefix: str = "") -> list[Fact]:
+    """Every number a reply may quote from one hypothetical comparison.
+
+    Both sides and the difference, because the interesting sentence names all
+    three — "that takes you from 48 to 46, so two points". The delta especially:
+    the model is forbidden from subtracting the two itself, so if the computed
+    difference were not admitted here the guardrail would withhold the one
+    figure the user actually asked for.
+    """
+    if not result.get("ok"):
+        return []
+
+    facts: list[Fact] = []
+
+    def numeric(value: object) -> float | None:
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            return None
+        return float(value)
+
+    # Both sides are resilience scores and are labelled as such, because
+    # `_matches` only lets a bare "your score is 46" match a fact keyed exactly
+    # `resilience.score`.
+    score = result.get("score") or {}
+    for side in ("before", "after"):
+        value = numeric(score.get(side))
+        if value is not None:
+            facts.append(
+                Fact(value=value, kind="score", label=f"{prefix}.resilience.score")
+            )
+
+    # The change itself is not a score — it is a quantity of points, and it gets
+    # quoted both ways round. "Drops to 46" uses the signed value; "costs you two
+    # points" uses the magnitude, and grounding only the former would withhold
+    # the more natural sentence.
+    delta = numeric(score.get("delta"))
+    if delta is not None:
+        facts.append(Fact(value=delta, kind="count", label=f"{prefix}.score.delta"))
+        facts.append(
+            Fact(value=abs(delta), kind="count", label=f"{prefix}.score.deltaMagnitude")
+        )
+
+    runway = result.get("runwayMonths") or {}
+    for side in ("before", "after"):
+        value = numeric(runway.get(side))
+        if value is not None:
+            facts.append(
+                Fact(value=value, kind="months", label=f"{prefix}.runway.{side}")
+            )
+    runway_delta = numeric(runway.get("delta"))
+    if runway_delta is not None:
+        facts.append(
+            Fact(value=runway_delta, kind="months", label=f"{prefix}.runway.delta")
+        )
+        facts.append(
+            Fact(
+                value=abs(runway_delta),
+                kind="months",
+                label=f"{prefix}.runway.deltaMagnitude",
+            )
+        )
+
+    buffer_ = result.get("monthlyBufferCents") or {}
+    for side in ("before", "after", "delta"):
+        cents = buffer_.get(side)
+        facts += _money(cents, f"{prefix}.buffer.{side}")
+        if side == "delta" and isinstance(cents, int):
+            facts += _money(abs(cents), f"{prefix}.buffer.deltaMagnitude")
+
+    for side in ("before", "after"):
+        point = (result.get("breakingPoint") or {}).get(side) or {}
+        facts += _money(
+            point.get("overageCents"), f"{prefix}.breakingPoint.{side}.overage"
+        )
+        month = point.get("monthIndex")
+        if isinstance(month, int):
+            # Keyed exactly `breakingPoint.monthIndex`: `_matches` requires that
+            # when the sentence is about a breaking point, so that a month the
+            # engine merely simulated cannot validate a claim about the break.
+            facts.append(
+                Fact(
+                    value=float(month),
+                    kind="month_index",
+                    label=f"{prefix}.breakingPoint.monthIndex",
+                )
+            )
+
+    plan = result.get("preventionPlanAfter") or {}
+    facts += _money(plan.get("extraSavingsCentsNeeded"), f"{prefix}.plan.extraSavings")
+    facts += _money(plan.get("monthlyCutCentsNeeded"), f"{prefix}.plan.monthlyCut")
+    facts += _money(plan.get("cuttableMonthlyCents"), f"{prefix}.plan.cuttable")
+
+    return facts
+
+
 def build_ledger(
     simulate_results: Iterable[SimulateResponse] = (),
     tool_arguments: Iterable[dict] = (),
     user_messages: Iterable[str] = (),
     lookup_results: Iterable[dict] = (),
+    what_if_results: Iterable[dict] = (),
 ) -> Ledger:
     """Assemble everything the reply is allowed to say.
 
@@ -320,6 +436,8 @@ def build_ledger(
         facts.extend(facts_from_result(result, prefix=f"run{index}"))
     for index, result in enumerate(lookup_results):
         facts.extend(facts_from_lookup(result, prefix=f"lookup{index}"))
+    for index, result in enumerate(what_if_results):
+        facts.extend(facts_from_what_if(result, prefix=f"whatif{index}"))
 
     echoed: set[float] = set()
     for arguments in tool_arguments:

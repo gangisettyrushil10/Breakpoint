@@ -39,6 +39,11 @@ Do NOT work the cost out yourself, and do not guess a fuel price -- you have no
 way to know today's. If the user already knows what they spend on fuel, just use
 `patch_profile` with their figure instead.
 
+To answer "what if petrol goes up 50 cents a gallon", send
+`fuelPriceChangeCents: 50` along with the commute details. You get back the cost
+at both prices and the monthly difference; hand that difference to `what_if` as a
+`changeBy` on `expenses.transportationCents` to see what it does to their score.
+
 This tool does not change the budget. Show the user the estimate and what it was
 based on, ask whether it looks right, and only call `patch_profile` once they
 agree."""
@@ -72,6 +77,16 @@ class CommuteCostInput(BaseModel):
         description=(
             "The car's fuel economy, if the user said. Leave unset if they did "
             "not -- a national average is used and reported back as an assumption."
+        ),
+    )
+    fuelPriceChangeCents: int = Field(
+        default=0,
+        description=(
+            "Price movement per gallon to test, in cents. Send 50 for 'what if "
+            "petrol goes up 50 cents a gallon', -25 for a fall. The server looks "
+            "up today's price, applies this, and returns the cost at both, so "
+            "you never have to add anything up yourself. Leave at 0 for what "
+            "they spend today."
         ),
     )
 
@@ -113,9 +128,32 @@ def handle(profile: FinancialProfile, arguments: dict) -> dict:
     gallons = monthly_miles / mpg
     monthly_cost_cents = round(gallons * quote.amount_cents)
 
+    # A price movement is priced here rather than by the model, for the same
+    # reason the base cost is: "50 cents a gallon works out at $18 a month" is
+    # the number someone acts on, and multiplying gallons by cents is not the
+    # model's job. Feed `monthlyCostChangeCents` straight into `what_if` as a
+    # `changeBy` on transportation.
+    adjusted: dict | None = None
+    if parsed.fuelPriceChangeCents:
+        new_price = quote.amount_cents + parsed.fuelPriceChangeCents
+        if new_price <= 0:
+            return {
+                "ok": False,
+                "error": "invalid_arguments",
+                "detail": "That change would put the fuel price at or below zero.",
+            }
+        new_cost = round(gallons * new_price)
+        adjusted = {
+            "fuelPricePerGallonCents": new_price,
+            "monthlyCostCents": new_cost,
+            "monthlyCostChangeCents": new_cost - monthly_cost_cents,
+            "priceChangeCents": parsed.fuelPriceChangeCents,
+        }
+
     return {
         "ok": True,
         "monthlyCostCents": monthly_cost_cents,
+        "ifPriceChanges": adjusted,
         "fuelPrice": quote.as_dict(),
         # Echoed back so the model can state what the figure rests on, and so the
         # user can correct an assumption they never made.

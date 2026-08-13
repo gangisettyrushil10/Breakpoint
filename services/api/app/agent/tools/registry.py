@@ -12,7 +12,7 @@ whole request.
 
 from typing import Any, Callable, Protocol
 
-from app.agent.tools import commute_cost, patch_profile, simulate
+from app.agent.tools import commute_cost, patch_profile, simulate, what_if
 from app.domain.financial_profile import FinancialProfile
 
 
@@ -113,6 +113,14 @@ REGISTRY: dict[str, Tool] = {
         description=commute_cost.TOOL_DESCRIPTION,
         input_schema=commute_cost.input_schema,
         handler=commute_cost.handle,
+    ),
+    # Runs the engine over a modified *copy*. Emphatically non-mutating: the
+    # whole point is asking "what would this cost me?" without committing to it.
+    what_if.TOOL_NAME: Tool(
+        name=what_if.TOOL_NAME,
+        description=what_if.TOOL_DESCRIPTION,
+        input_schema=what_if.input_schema,
+        handler=what_if.handle,
     ),
 }
 

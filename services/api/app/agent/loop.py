@@ -36,7 +36,7 @@ from app.agent.grounding import build_ledger
 from app.agent.guardrails import SentenceGate
 from app.agent.provider import ModelClient, ProviderError, ToolCall, tool_result_item
 from app.agent.schemas import ChatMessage, GuardrailReport, ToolCallRecord
-from app.agent.tools import commute_cost, registry
+from app.agent.tools import commute_cost, registry, what_if
 from app.domain.financial_profile import FinancialProfile
 from app.routes.simulate import SimulateResponse
 
@@ -134,6 +134,10 @@ class _TurnState:
     #: patch_profile → reply, and clearing would strip the ledger of the very
     #: figure the confirming reply has to quote.
     lookup_results: list[dict] = field(default_factory=list)
+    #: Hypothetical comparisons made this turn. Like lookups, kept across a
+    #: profile edit: someone may try a change, like it, and save it, and the
+    #: reply confirming that still needs to quote the figures that persuaded them.
+    what_if_results: list[dict] = field(default_factory=list)
     tool_calls: list[ToolCallRecord] = field(default_factory=list)
     final_text: str = ""
     stop_reason: str = "completed"
@@ -170,6 +174,7 @@ class _TurnState:
             tool_arguments=[call.arguments for call in self.tool_calls],
             user_messages=self.user_messages,
             lookup_results=self.lookup_results,
+            what_if_results=self.what_if_results,
         )
 
 
@@ -569,6 +574,9 @@ class AgentLoop:
 
         if name == commute_cost.TOOL_NAME:
             state.lookup_results.append(payload)
+
+        if name == what_if.TOOL_NAME:
+            state.what_if_results.append(payload)
 
         if name == "simulate":
             result = SimulateResponse.model_validate(payload["result"])

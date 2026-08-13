@@ -97,6 +97,54 @@ def test_reports_an_assumed_mpg_as_assumed(profile):
     assert stated["assumptions"]["milesPerGallonWasAssumed"] is False
 
 
+class TestPriceMovement:
+    """"What if petrol goes up 50 cents?" -- priced here, never by the model."""
+
+    def test_a_rise_costs_more_per_month(self, profile):
+        result = commute_cost.handle(
+            profile,
+            {"milesEachWay": 24, "milesPerGallon": 28, "fuelPriceChangeCents": 50},
+        )
+
+        adjusted = result["ifPriceChanges"]
+        # 37.142857 gallons a month at 50c more is $18.57.
+        assert adjusted["monthlyCostChangeCents"] == 1_857
+        assert adjusted["fuelPricePerGallonCents"] == 421
+        assert adjusted["monthlyCostCents"] > result["monthlyCostCents"]
+
+    def test_a_fall_costs_less(self, profile):
+        result = commute_cost.handle(
+            profile,
+            {"milesEachWay": 24, "milesPerGallon": 28, "fuelPriceChangeCents": -25},
+        )
+
+        assert result["ifPriceChanges"]["monthlyCostChangeCents"] < 0
+
+    def test_no_movement_asked_for_means_no_arm(self, profile):
+        result = commute_cost.handle(profile, {"milesEachWay": 24})
+
+        assert result["ifPriceChanges"] is None
+
+    def test_a_change_below_free_is_rejected(self, profile):
+        result = commute_cost.handle(
+            profile, {"milesEachWay": 24, "fuelPriceChangeCents": -100_000}
+        )
+
+        assert result["ok"] is False
+
+    def test_the_movement_is_quotable(self, profile):
+        result = commute_cost.handle(
+            profile,
+            {"milesEachWay": 24, "milesPerGallon": 28, "fuelPriceChangeCents": 50},
+        )
+        ledger = build_ledger(lookup_results=[result])
+
+        assert ledger.supports(18.57, "money")
+        assert ledger.supports(
+            result["ifPriceChanges"]["monthlyCostCents"] / 100, "money"
+        )
+
+
 def test_carries_the_citation_through(profile):
     result = commute_cost.handle(profile, {"milesEachWay": 24})
 
