@@ -18,8 +18,9 @@ that each fail *silently* if missed, which is why they're called out here:
 """
 
 import os
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
-from typing import Any, Awaitable, Callable, Protocol
+from typing import Any, Protocol
 
 from app.agent.prompts import SYSTEM_PROMPT
 

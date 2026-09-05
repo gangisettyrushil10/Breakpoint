@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 #: number each time they asked, which reads as the tool being unreliable.
 CACHE_TTL_SECONDS = 60 * 60 * 6
 
-_cache: dict[str, tuple[float, "PriceQuote"]] = {}
+_cache: dict[str, tuple[float, PriceQuote]] = {}
 
 
 @dataclass(frozen=True)

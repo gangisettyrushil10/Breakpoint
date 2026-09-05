@@ -9,9 +9,18 @@ import json
 import pytest
 from fastapi.testclient import TestClient
 
-from app.agent.tools import patch_profile, registry, simulate as simulate_tool
+from app.agent.tools import (
+    explain_score,
+    patch_profile,
+    plan_resilience,
+    registry,
+)
+from app.agent.tools import (
+    simulate as simulate_tool,
+)
 from app.domain.financial_profile import FinancialProfile
 from app.main import app
+from app.simulation.scoring import compute_resilience_score
 
 client = TestClient(app)
 
@@ -112,6 +121,23 @@ def test_tool_matches_simulate_route(months: int, scenarios: list[dict]) -> None
     assert tool_payload["result"] == route_response.json()
 
 
+def test_tool_matches_explicit_breaking_point_discovery() -> None:
+    arguments = {
+        "months": 12,
+        "scenarios": [],
+        "discoverBreakingPoint": True,
+    }
+    route_response = client.post(
+        "/simulate", json={"profile": maya_profile_payload(), **arguments}
+    )
+
+    tool_payload = simulate_tool.handle(maya_profile(), arguments)
+
+    assert route_response.status_code == 200
+    assert tool_payload["result"] == route_response.json()
+    assert tool_payload["discoverBreakingPoint"] is True
+
+
 def test_tool_defaults_to_six_months() -> None:
     payload = simulate_tool.handle(maya_profile(), {})
 
@@ -164,7 +190,11 @@ def test_tool_input_schema_is_object_shaped() -> None:
     schema = simulate_tool.input_schema()
 
     assert schema["type"] == "object"
-    assert set(schema["properties"]) == {"months", "scenarios"}
+    assert set(schema["properties"]) == {
+        "months",
+        "scenarios",
+        "discoverBreakingPoint",
+    }
 
 
 def test_schema_advertises_no_months_default() -> None:
@@ -278,3 +308,53 @@ def test_patch_profile_rejects_empty_patch() -> None:
 
     assert payload["ok"] is False
     assert payload["error"] == "empty_patch"
+
+
+def test_explain_score_returns_the_weighted_formula() -> None:
+    payload = explain_score.handle(maya_profile(), {})
+
+    assert payload["ok"] is True
+    assert payload["score"] == simulate_tool.run_simulate(
+        maya_profile()
+    ).resilience.score
+    assert [component["weightPercent"] for component in payload["components"]] == [
+        50,
+        30,
+        20,
+    ]
+    assert payload["weakestComponent"] in {"runway", "buffer", "credit"}
+    assert payload["writesProfile"] is False
+
+
+def test_plan_resilience_finds_minimum_verified_pathways() -> None:
+    profile = maya_profile()
+    payload = plan_resilience.handle(profile, {"targetScore": 60})
+
+    assert payload["ok"] is True
+    assert payload["currentScore"] < payload["targetScore"]
+    assert payload["writesProfile"] is False
+    assert profile == maya_profile()
+
+    for pathway in payload["pathways"]:
+        if not pathway["feasible"]:
+            continue
+        required = pathway["requiredCents"]
+        assert pathway["resultingScore"] >= 60
+        if required >= 100:
+            changed = plan_resilience._profile_with(profile, pathway["id"], required - 100)
+            assert compute_resilience_score(changed).score < 60
+
+
+def test_plan_resilience_limits_cuts_to_flexible_spending() -> None:
+    profile = maya_profile()
+    payload = plan_resilience.handle(profile, {"targetScore": 100})
+    flexible_path = next(
+        pathway
+        for pathway in payload["pathways"]
+        if pathway["id"] == "flexible_cut"
+    )
+
+    assert flexible_path["feasible"] is False
+    assert flexible_path["maximumTestedCents"] == (
+        profile.expenses.subscriptionsCents + profile.expenses.discretionaryCents
+    )

@@ -233,8 +233,8 @@ def handle(profile: FinancialProfile, arguments: dict) -> dict:
     )
 
     changed = sorted(
-        set((parsed.change.model_dump(exclude_none=True) if parsed.change else {}))
-        | set((parsed.changeBy.model_dump(exclude_none=True) if parsed.changeBy else {}))
+        set(parsed.change.model_dump(exclude_none=True) if parsed.change else {})
+        | set(parsed.changeBy.model_dump(exclude_none=True) if parsed.changeBy else {})
     )
 
     return {

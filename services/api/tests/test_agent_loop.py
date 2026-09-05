@@ -210,7 +210,9 @@ def test_the_item_id_is_never_echoed_as_the_call_id() -> None:
     drive(model, user("Run it"), maya_profile())
 
     echoed = json.dumps(model.calls[1]["input"])
-    assert '"call_id": "call_abc"' in echoed.replace('"call_id":"call_abc"', '"call_id": "call_abc"')
+    assert '"call_id": "call_abc"' in echoed.replace(
+        '"call_id":"call_abc"', '"call_id": "call_abc"'
+    )
     assert '"call_id": "fc_xyz"' not in echoed
 
 
@@ -244,6 +246,8 @@ def test_tool_definitions_use_the_flat_responses_shape() -> None:
         "patch_profile",
         "estimate_commute_cost",
         "what_if",
+        "explain_resilience_score",
+        "plan_resilience_target",
     }
     for tool in tools:
         assert tool["type"] == "function"

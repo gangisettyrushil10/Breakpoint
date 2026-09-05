@@ -22,7 +22,7 @@ export default function Home() {
       <ProfileHeader />
       <DemoNotice />
 
-      <main className="mx-auto flex w-full max-w-6xl flex-col gap-16 px-5 py-10 sm:px-8 sm:py-14">
+      <main className="dashboard-shell mx-auto flex w-full max-w-6xl flex-col gap-14 px-5 py-10 sm:px-8 sm:py-14">
         <Section
           index="01"
           eyebrow="The short answer"
@@ -34,28 +34,36 @@ export default function Home() {
 
         <Section
           index="02"
+          eyebrow="Interactive stress test"
+          title="Stack the setbacks. Watch the budget react."
+          lede="Start from a calm month, then add the events you want to test. One-time shocks change survival; permanent budget changes move the baseline score."
+          id="shocks"
+        >
+          <ShockBuilder />
+        </Section>
+
+        <Section
+          index="03"
           eyebrow="Month by month"
-          title="When things would start to go wrong"
-          lede="Savings and credit are shown separately, because they run out at different times. A credit card keeps the bills paid for a while after the savings are gone — it buys you time, it does not make you safe."
+          title="See exactly when the pressure lands"
+          lede="Savings and credit stay separate because they run out at different times. Credit can buy time after cash reaches zero, but it cannot make the budget safe."
           id="timeline"
         >
           <SurvivalTimeline />
         </Section>
 
         <Section
-          index="03"
-          eyebrow="Try it yourself"
-          title="What if these things happened?"
-          lede="Turn on the setbacks you want to test and everything on this page is worked out again. They are listed roughly in the order US households actually report them."
-          id="shocks"
-          collapsible
-          openLabel="Let me try some what-ifs"
+          index="04"
+          eyebrow="What would help"
+          title="Move the breaking point"
+          lede="The engine prices two concrete escape routes: more liquid savings before the shock, or a monthly reduction limited to spending that can actually be paused."
+          id="improve"
         >
-          <ShockBuilder />
+          <RecoveryComparison />
         </Section>
 
         <Section
-          index="04"
+          index="05"
           eyebrow="The reason"
           title="One setback, or several at once"
           lede="A single piece of bad luck is usually survivable. The same setbacks landing close together often are not, because the first one uses up the savings that would have absorbed the second."
@@ -74,18 +82,6 @@ export default function Home() {
               <CompoundMatrix />
             </div>
           </div>
-        </Section>
-
-        <Section
-          index="05"
-          eyebrow="What would help"
-          title="What would actually have made a difference"
-          lede="Two ways out, both worked out from exactly how far past the limit things went: money saved up beforehand, or spending stopped each month. If the amount you would need to cut is more than you could realistically cut, we say so instead of pretending."
-          id="improve"
-          collapsible
-          openLabel="Show me what would help"
-        >
-          <RecoveryComparison />
         </Section>
 
         <Section

@@ -36,9 +36,10 @@ you may not estimate these numbers yourself.
 You do not pass the profile — the server supplies it. You choose the horizon and
 which hardship scenarios to stack. Pass an empty `scenarios` list to see the
 no-shock baseline; pass one or more scenarios to stress-test specific events.
-When `scenarios` is empty the engine searches its own preset shocks (car repair,
-medical bill, rent hike, layoff) to find the smallest stack that breaks the
-budget, so an empty call is the right way to answer "what would break me?"."""
+Set `discoverBreakingPoint` to true only for an open-ended question such as
+"what would break me?"; that searches the shared preset library for the smallest
+stack that breaks the budget without applying those presets to the baseline
+timeline."""
 
 
 class SimulateToolInput(BaseModel):
@@ -59,6 +60,14 @@ class SimulateToolInput(BaseModel):
         description=(
             "Hardship scenarios to apply. Every month index must be less than "
             "`months`. Leave empty for the baseline projection."
+        ),
+    )
+    discoverBreakingPoint: bool = Field(
+        default=False,
+        description=(
+            "Search the preset shock library when scenarios is empty. Use only "
+            "for open-ended breaking-point discovery; leave false for a true "
+            "no-shock baseline."
         ),
     )
 
@@ -99,6 +108,7 @@ def run_simulate(
     profile: FinancialProfile,
     months: int = 6,
     scenarios: list[ScenarioInput] | None = None,
+    discover_breaking_point: bool = False,
 ) -> SimulateResponse:
     """Same orchestration as `POST /simulate`, callable in-process."""
     scenarios = scenarios or []
@@ -118,9 +128,11 @@ def run_simulate(
     )
     simulation = run_months(profile, start, months, combined_schedule)
 
-    breaking_point_candidates = named_schedules or [
-        (name, preset(months)) for name, preset in SCENARIO_PRESETS.items()
-    ]
+    breaking_point_candidates = named_schedules
+    if discover_breaking_point and not named_schedules:
+        breaking_point_candidates = [
+            (name, preset(months)) for name, preset in SCENARIO_PRESETS.items()
+        ]
     breaking_point = find_breaking_point(profile, months, breaking_point_candidates)
     prevention_plan = build_prevention_plan(profile, breaking_point)
 
@@ -148,11 +160,17 @@ def handle(profile: FinancialProfile, arguments: dict) -> dict:
             "detail": validation_detail(error),
         }
 
-    result = run_simulate(profile, parsed.months, parsed.scenarios)
+    result = run_simulate(
+        profile,
+        parsed.months,
+        parsed.scenarios,
+        discover_breaking_point=parsed.discoverBreakingPoint,
+    )
 
     return {
         "ok": True,
         "months": parsed.months,
         "scenarios": [scenario.model_dump() for scenario in parsed.scenarios],
+        "discoverBreakingPoint": parsed.discoverBreakingPoint,
         "result": result.model_dump(),
     }

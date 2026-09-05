@@ -115,7 +115,11 @@ export function SurvivalTimeline() {
         </CardTitle>
       </div>
 
-      <div className="overflow-x-auto px-5 pb-2">
+      <div
+        className="overflow-x-auto px-5 pb-2"
+        tabIndex={0}
+        aria-label="Scrollable survival timeline"
+      >
         <svg
           viewBox={`0 0 ${W} ${H}`}
           className="w-full min-w-[680px]"
@@ -204,9 +208,11 @@ export function SurvivalTimeline() {
               <stop offset="100%" stopColor="var(--color-accent)" stopOpacity="0.02" />
             </linearGradient>
           </defs>
-          <path d={cashArea} fill="url(#cashFill)" />
+          <path className="timeline-area" d={cashArea} fill="url(#cashFill)" />
           <path
+            className="timeline-path"
             d={cashPath}
+            pathLength={1}
             fill="none"
             stroke="var(--color-accent)"
             strokeWidth={2}
@@ -271,6 +277,7 @@ export function SurvivalTimeline() {
             return (
               <rect
                 key={d.month}
+                className="timeline-bar"
                 x={x(d.month) - bw / 2}
                 y={CREDIT_BOTTOM - bh}
                 width={bw}
@@ -278,6 +285,7 @@ export function SurvivalTimeline() {
                 rx={2}
                 fill={utilizationColor(d.utilization)}
                 opacity={hover === null || hover === d.month ? 0.9 : 0.35}
+                style={{ animationDelay: `${d.month * 35}ms` }}
               />
             );
           })}
@@ -362,7 +370,8 @@ export function SurvivalTimeline() {
               width={STEP}
               height={CREDIT_BOTTOM - EVENT_Y + 10}
               fill="transparent"
-              onMouseEnter={() => setHover(d.month)}
+              onPointerEnter={() => setHover(d.month)}
+              onClick={() => setHover(d.month)}
             />
           ))}
         </svg>
@@ -402,7 +411,7 @@ export function SurvivalTimeline() {
             {active?.event ? (
               <span className="text-ink">{active.event}</span>
             ) : (
-              <span className="text-ink-3">Hover the chart to inspect a month</span>
+              <span className="text-ink-3">Hover or tap the chart to inspect a month</span>
             )}
           </div>
         </div>

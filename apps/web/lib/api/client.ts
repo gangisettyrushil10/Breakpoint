@@ -43,13 +43,4 @@ export async function simulate(
   return body as SimulateResponse;
 }
 
-export async function healthCheck(): Promise<boolean> {
-  try {
-    const response = await fetch(`${API_URL}/health`);
-    return response.ok;
-  } catch {
-    return false;
-  }
-}
-
 export { API_URL };

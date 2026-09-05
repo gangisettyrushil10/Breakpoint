@@ -73,8 +73,9 @@ function IntakeFormFields() {
       <Card>
         <h2 className="text-[15px] font-medium">About you</h2>
         <p className="mt-1 max-w-[62ch] text-[13px] leading-relaxed text-ink-2">
-          Location and household don&rsquo;t change the math in this version — they
-          label the run, and Phase 3 will use them for local rent data.
+          Location and household details label the run and give the assistant
+          context for cited local cost estimates. They do not silently change
+          your score.
         </p>
 
         <div className="mt-5 grid gap-4 sm:grid-cols-3">

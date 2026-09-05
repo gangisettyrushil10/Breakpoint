@@ -10,9 +10,17 @@ argument gives the model a chance to correct itself instead of failing the
 whole request.
 """
 
-from typing import Any, Callable, Protocol
+from collections.abc import Callable
+from typing import Any, Protocol
 
-from app.agent.tools import commute_cost, patch_profile, simulate, what_if
+from app.agent.tools import (
+    commute_cost,
+    explain_score,
+    patch_profile,
+    plan_resilience,
+    simulate,
+    what_if,
+)
 from app.domain.financial_profile import FinancialProfile
 
 
@@ -121,6 +129,18 @@ REGISTRY: dict[str, Tool] = {
         description=what_if.TOOL_DESCRIPTION,
         input_schema=what_if.input_schema,
         handler=what_if.handle,
+    ),
+    explain_score.TOOL_NAME: Tool(
+        name=explain_score.TOOL_NAME,
+        description=explain_score.TOOL_DESCRIPTION,
+        input_schema=explain_score.input_schema,
+        handler=explain_score.handle,
+    ),
+    plan_resilience.TOOL_NAME: Tool(
+        name=plan_resilience.TOOL_NAME,
+        description=plan_resilience.TOOL_DESCRIPTION,
+        input_schema=plan_resilience.input_schema,
+        handler=plan_resilience.handle,
     ),
 }
 

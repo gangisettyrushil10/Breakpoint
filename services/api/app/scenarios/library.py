@@ -1,4 +1,4 @@
-from typing import Callable
+from collections.abc import Callable
 
 from app.simulation.runner import MonthlyAdjustments
 from app.simulation.shocks import Shock
@@ -45,19 +45,29 @@ def layoff(
 
 
 def _default_car_repair(months: int) -> Schedule:
-    return car_repair(month_index=months // 2)
+    return car_repair(month_index=min(3, months - 1), cost_cents=240_000)
 
 
 def _default_medical_bill(months: int) -> Schedule:
-    return medical_bill(month_index=months // 2)
+    return medical_bill(month_index=min(3, months - 1), cost_cents=180_000)
 
 
 def _default_rent_hike(months: int) -> Schedule:
-    return rent_hike(start_month=1, duration_months=max(months - 1, 1), increase_cents=20_000)
+    start_month = min(1, months - 1)
+    return rent_hike(
+        start_month=start_month,
+        duration_months=max(months - start_month, 1),
+        increase_cents=25_000,
+    )
 
 
 def _default_layoff(months: int) -> Schedule:
-    return layoff(start_month=0, duration_months=min(2, months), replacement_income_cents=0)
+    start_month = min(2, months - 1)
+    return layoff(
+        start_month=start_month,
+        duration_months=min(5, months - start_month),
+        replacement_income_cents=120_000,
+    )
 
 
 SCENARIO_PRESETS: dict[str, Callable[[int], Schedule]] = {

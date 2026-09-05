@@ -17,9 +17,10 @@ Two rules here are load-bearing and easy to regress:
 
 import asyncio
 import json
+from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
 from time import monotonic
-from typing import Any, AsyncIterator, Protocol
+from typing import Any, Protocol
 
 from app.agent import guardrails
 from app.agent.events import (
@@ -29,9 +30,9 @@ from app.agent.events import (
     RetractEvent,
     SentenceEvent,
     SimulateRunEvent,
-    WhatIfEvent,
     StartEvent,
     ToolCallEvent,
+    WhatIfEvent,
 )
 from app.agent.grounding import build_ledger
 from app.agent.guardrails import SentenceGate

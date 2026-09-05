@@ -387,8 +387,11 @@ export function buildVerdict(
         ? `Rent is ${(rentShare * 100).toFixed(0)}% of take-home — hard to trim under stress.`
         : `Debt minimums of $${(profile.debt.minimumPaymentsCents / 100).toFixed(0)}/mo keep running even when income drops.`;
 
+  const breakingStackSize = result.breakingPoint.shockCombination.length;
   const headline = result.breakingPoint.triggered
-    ? "This budget breaks when the selected shocks stack — credit is not a safety net forever."
+    ? breakingStackSize <= 1
+      ? "One selected setback is enough to break this budget."
+      : `${breakingStackSize} selected setbacks are enough to break this budget.`
     : activeIds.length === 0
       ? "In a normal month this budget holds. Add shocks to find the breaking point."
       : "Under the selected shocks, cash and credit absorb the hit within the simulated window.";
@@ -396,7 +399,7 @@ export function buildVerdict(
   return {
     headline,
     riskState,
-    shocksSurvivable: result.breakingPoint.triggered ? Math.max(0, activeIds.length - 1) : activeIds.length,
+    shocksSurvivable: result.breakingPoint.triggered ? breakingStackSize : activeIds.length,
     monthsUntilCashOut: cashOut ?? result.simulation.months.length,
     monthsUntilMissedPayment: missPayment ?? result.simulation.months.length,
     baselineRunwayMonths: runway,
@@ -463,7 +466,7 @@ export function buildAssumptions(
 ): { label: string; value: string }[] {
   const rows: { label: string; value: string }[] = [
     { label: "Simulation horizon", value: `${months} months` },
-    { label: "Interest accrual", value: "Excluded from v1 model" },
+    { label: "Interest accrual", value: "Not included in this short-horizon model" },
     { label: "Credit limit", value: "Starting balance + available credit" },
   ];
 

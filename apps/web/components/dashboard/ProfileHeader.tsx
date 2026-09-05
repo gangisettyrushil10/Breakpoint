@@ -11,14 +11,15 @@ export function ProfileHeader() {
   const buffer = result?.baseline.monthlyBufferCents ?? 0;
 
   return (
-    <header className="border-b border-line">
+    <header className="brand-header border-b border-line">
       <div className="mx-auto flex max-w-6xl flex-wrap items-end justify-between gap-x-8 gap-y-4 px-5 py-6 sm:px-8">
         <div>
           <div className="flex items-center gap-2.5">
-            <span aria-hidden className="block h-3.5 w-[3px] rounded-full bg-accent" />
-            <span className="text-[13px] font-medium tracking-tight">BreakPoint</span>
-            <span className="rounded bg-surface-2 px-1.5 py-0.5 text-[10px] text-ink-3">
-              {loading ? "simulating…" : "live engine"}
+            <span aria-hidden className="brand-mark block h-4 w-[3px] rounded-full bg-accent" />
+            <span className="text-[14px] font-semibold tracking-tight">BreakPoint</span>
+            <span className="inline-flex items-center gap-1.5 rounded bg-surface-2 px-2 py-0.5 text-[10px] text-ink-3">
+              <span aria-hidden className={`live-dot size-1.5 rounded-full ${loading ? "bg-caution" : "bg-stable"}`} />
+              {loading ? "simulating" : "live engine"}
             </span>
           </div>
           {/* The mock persona only describes the demo budget. Once these are the
@@ -44,7 +45,7 @@ export function ProfileHeader() {
           </p>
         </div>
 
-        <div className="order-last flex flex-wrap gap-2 sm:order-0">
+        <nav aria-label="Primary" className="order-last flex flex-wrap gap-2 sm:order-0">
           {/* Until there are real numbers to look at, entering them is the only
               thing worth doing on this page — so it is the only button that
               looks like a button. Styling it identically to "Account" is what
@@ -75,7 +76,7 @@ export function ProfileHeader() {
           >
             Account
           </Link>
-        </div>
+        </nav>
 
         <dl className="flex flex-wrap gap-x-7 gap-y-3">
           <Figure

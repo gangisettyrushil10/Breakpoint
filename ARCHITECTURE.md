@@ -1,8 +1,8 @@
 # BreakPoint — Architecture Decisions
 
-**Status:** Locked for Phase 1  
+**Status:** Implemented production candidate
 **Product:** BreakPoint (Financial Distress Simulator)  
-**Last updated:** 2026-08-04  
+**Last updated:** 2026-09-05
 **Repo root:** `breakpoint/`
 
 ---
@@ -211,7 +211,7 @@ Frontend calls `http://localhost:8000`. CORS is a one-time setup, not a crisis.
 
 ---
 
-## Build phases (do not skip order)
+## Implementation sequence
 
 ### Phase 1 — Manual deterministic simulator
 - Intake form
@@ -219,17 +219,18 @@ Frontend calls `http://localhost:8000`. CORS is a one-time setup, not a crisis.
 - Preset scenarios
 - Resilience score + breaking point
 - Dashboard
-- **No LLM. No Plaid. Auth/DB optional.**
+- Completed before the agent layer was introduced.
 
 ### Phase 2 — Agent explanation layer
 - Conversational intake
 - Plain-English explanation of *computed* results
 - Action plan wording
 - Guardrails
+- Completed, including sentence-gated streaming and a grounding ledger.
 
 ### Phase 3 — Real data context
-- HUD Fair Market Rents, FRED, etc.
-- Optional Plaid
+- Current fuel-price lookup with citation and explicit confirmation
+- Additional sources remain optional and must follow the same proposal contract
 
 ### Phase 4 — Stickiness
 - Score history, goals, “what changed,” risk alerts
@@ -288,14 +289,11 @@ Killer line for the vision:
 
 ---
 
-## Next steps after this note
+## Current extension points
 
-1. Design the canonical `FinancialProfile` JSON field-by-field.  
-2. Scaffold FastAPI with `GET /health` only.  
-3. Implement pure simulation + tests.  
-4. Add `POST /simulate`.  
-5. Wire Next intake → API → dashboard.  
-6. Only then consider LLM explanation.
+1. Add a cited local-cost provider behind the same proposal-and-confirm contract.
+2. Add score history only after defining a migration-safe profile snapshot.
+3. Introduce heavier modeling only when it improves a measured product question.
 
 ---
 

@@ -25,6 +25,23 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s %(name)s %(message)s",
 )
 
+LOCAL_DEV_ORIGINS = (
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    # Next.js falls back to 3001 whenever 3000 is already taken, which is
+    # routine when another project is running. Without this every dashboard
+    # request fails and the browser reports only "CORS", not the cause.
+    "http://localhost:3001",
+    "http://127.0.0.1:3001",
+)
+
+
+def _cors_origins(value: str | None = None) -> list[str]:
+    """Return the local dev origins plus any comma-separated deployed origins."""
+    configured = value if value is not None else os.environ.get("CORS_ALLOW_ORIGINS", "")
+    extra = [origin.strip().rstrip("/") for origin in configured.split(",") if origin.strip()]
+    return list(dict.fromkeys([*LOCAL_DEV_ORIGINS, *extra]))
+
 
 def _check_openai_sdk() -> None:
     """Warn loudly at startup if the installed openai package is too old.
@@ -83,17 +100,9 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    # Add the deployed origin here before shipping. Never pair a wildcard with
-    # allow_credentials — browsers reject it and it would be unsafe anyway.
-    allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        # Next.js falls back to 3001 whenever 3000 is already taken, which is
-        # routine when another project is running. Without this every dashboard
-        # request fails and the browser reports only "CORS", not the cause.
-        "http://localhost:3001",
-        "http://127.0.0.1:3001",
-    ],
+    # Never pair a wildcard with allow_credentials — browsers reject it and it
+    # would be unsafe anyway. Use CORS_ALLOW_ORIGINS for deployed frontend URLs.
+    allow_origins=_cors_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

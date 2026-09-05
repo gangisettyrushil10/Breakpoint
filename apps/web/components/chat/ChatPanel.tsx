@@ -21,7 +21,7 @@ export interface WhatIfComparison {
 const STARTERS = [
   "How resilient is my budget right now?",
   "What would a layoff plus a car repair do to me?",
-  "What single change moves my breaking point the most?",
+  "What would it take to get my score to 70?",
 ];
 
 const GUARDRAIL_NOTES = {
@@ -308,7 +308,9 @@ function EmptyState({
   disabled: boolean;
 }) {
   return (
-    <div className="rounded-lg border border-line bg-surface-1 p-5">
+    <div className="overflow-hidden rounded-lg border border-line-strong bg-surface-1">
+      <div className="h-1 bg-[linear-gradient(90deg,var(--color-accent),var(--color-stable),var(--color-caution),var(--color-critical))]" />
+      <div className="p-5">
       <h2 className="text-[18px] font-semibold">Ask about your money situation</h2>
       <p className="mt-2 max-w-[58ch] text-[15px] leading-relaxed text-ink-2">
         Every number in a reply comes from the same deterministic engine behind the
@@ -322,11 +324,12 @@ function EmptyState({
             type="button"
             disabled={disabled}
             onClick={() => onPick(starter)}
-            className="rounded-full border border-line bg-surface-2 px-3 py-1.5 text-[13.5px] text-ink-2 hover:border-line-strong hover:text-ink disabled:opacity-50"
+            className="rounded-md border border-line bg-surface-2 px-3 py-2 text-left text-[13.5px] text-ink-2 transition-all hover:-translate-y-px hover:border-accent/60 hover:text-ink disabled:opacity-50"
           >
             {starter}
           </button>
         ))}
+      </div>
       </div>
     </div>
   );

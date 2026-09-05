@@ -17,8 +17,8 @@ import asyncio
 import json
 import logging
 import os
+from collections.abc import AsyncIterator
 from dataclasses import asdict
-from typing import AsyncIterator
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
@@ -212,7 +212,7 @@ async def _frames(
                 item = await asyncio.wait_for(
                     events.__anext__(), timeout=KEEPALIVE_SECONDS
                 )
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 yield ": ping\n\n"
                 continue
             except StopAsyncIteration:

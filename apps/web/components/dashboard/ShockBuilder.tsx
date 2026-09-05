@@ -6,6 +6,7 @@ import {
   useDashboard,
 } from "@/components/dashboard/DashboardProvider";
 import type { ShockId } from "@/lib/api/mappers";
+import { DEFAULT_ACTIVE_SHOCKS } from "@/lib/api/mappers";
 
 const categoryLabel = {
   income: "Income",
@@ -20,21 +21,51 @@ const categoryTone = {
 } as const;
 
 export function ShockBuilder() {
-  const { activeShocks, toggleShock, loading } = useDashboard();
+  const { activeShocks, setActiveShocks, toggleShock, loading } = useDashboard();
 
   return (
     <Card padded={false}>
-      <div className="flex flex-wrap items-baseline justify-between gap-3 border-b border-line p-5">
+      <div className="flex flex-wrap items-start justify-between gap-4 border-b border-line p-5">
         <div>
-          <h3 className="label">Shock library</h3>
+          <h3 className="label text-accent">Build the fire drill</h3>
           <p className="mt-1.5 text-[13px] text-ink-2">
-            Toggle events to re-run the live simulator. Each change calls{" "}
-            <span className="text-ink">POST /simulate</span> with typed scenarios.
+            Toggle realistic setbacks. The cash, credit, and breaking-point timeline recalculates immediately.
           </p>
         </div>
-        <div className="tnum text-[13px] text-ink-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setActiveShocks([])}
+            aria-pressed={activeShocks.length === 0}
+            className={`rounded-md border px-3 py-1.5 text-[12px] transition-colors ${
+              activeShocks.length === 0
+                ? "border-stable/50 bg-stable-dim text-stable"
+                : "border-line bg-surface-2 text-ink-2 hover:border-line-strong"
+            }`}
+          >
+            Calm baseline
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveShocks(DEFAULT_ACTIVE_SHOCKS)}
+            aria-pressed={
+              activeShocks.length === DEFAULT_ACTIVE_SHOCKS.length &&
+              DEFAULT_ACTIVE_SHOCKS.every((id) => activeShocks.includes(id))
+            }
+            className="rounded-md border border-accent/50 bg-accent-dim px-3 py-1.5 text-[12px] text-accent transition-colors hover:border-accent"
+          >
+            Demo stack
+          </button>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between gap-4 border-b border-line bg-surface-2/60 px-5 py-2.5">
+        <p className="text-[12px] text-ink-3">
+          Baseline score stays fixed; selected shocks test how long the budget survives.
+        </p>
+        <div className="tnum shrink-0 text-[12px] text-ink-2" aria-live="polite">
           <span className="text-ink">{activeShocks.length}</span> active
-          {loading ? <span className="ml-2 text-ink-3">updating…</span> : null}
+          {loading ? <span className="simulation-pulse ml-2 text-accent">recalculating</span> : null}
         </div>
       </div>
 
@@ -47,8 +78,8 @@ export function ShockBuilder() {
               type="button"
               onClick={() => toggleShock(shock.id as ShockId)}
               aria-pressed={on}
-              className={`group flex flex-col items-start gap-1 bg-surface-1 p-4 text-left transition-colors hover:bg-surface-2 ${
-                on ? "bg-surface-2" : ""
+              className={`shock-tile group flex min-h-[92px] flex-col items-start gap-1 bg-surface-1 p-4 text-left transition-all hover:bg-surface-2 ${
+                on ? `is-active shock-${shock.category}` : ""
               }`}
             >
               <div className="flex w-full items-center justify-between gap-2">
@@ -87,8 +118,7 @@ export function ShockBuilder() {
       </div>
 
       <p className="border-t border-line px-5 py-3 text-[12.5px] text-ink-3">
-        Active shocks are sent as parameterized scenario objects. The score, timeline, and
-        breaking point update from the engine — not from hand-tuned mock charts.
+        Every outcome comes from the deterministic engine. Identical inputs always produce identical results.
       </p>
     </Card>
   );

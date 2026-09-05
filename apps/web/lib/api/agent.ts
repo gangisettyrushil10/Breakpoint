@@ -1,39 +1,5 @@
 import { API_URL, ApiError } from "./client";
-import type { AgentEvent, ChatRequest, ChatResponse } from "./types";
-
-/**
- * One chat turn. The agent is stateless — send the whole transcript and the
- * working profile every time, and use the profile that comes back (the agent
- * may have edited it via its `patch_profile` tool).
- */
-export async function sendAgentMessage(
-  request: ChatRequest,
-  options: { signal?: AbortSignal } = {}
-): Promise<ChatResponse> {
-  const response = await fetch(`${API_URL}/agent/chat`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(request),
-    signal: options.signal,
-  });
-
-  let body: unknown = null;
-  try {
-    body = await response.json();
-  } catch {
-    body = null;
-  }
-
-  if (!response.ok) {
-    const detail =
-      typeof body === "object" && body && "detail" in body
-        ? JSON.stringify((body as { detail: unknown }).detail)
-        : response.statusText;
-    throw new ApiError(`Chat failed: ${detail}`, response.status, body);
-  }
-
-  return body as ChatResponse;
-}
+import type { AgentEvent, ChatRequest } from "./types";
 
 /**
  * The same turn, narrated over SSE.

@@ -1,24 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { Card, CardTitle } from "@/components/ui/primitives";
 import { useDashboard } from "@/components/dashboard/DashboardProvider";
 
 export function AssumptionsPanel() {
   const { assumptions, result } = useDashboard();
-  const [runAt, setRunAt] = useState<string>("—");
-
-  useEffect(() => {
-    setRunAt(new Date().toISOString());
-  }, [result]);
 
   const receipt = {
-    formulaVersion: "sim-engine 0.4.0",
+    formulaVersion: "sim-engine 1.0.0",
     schemaVersion: 1,
-    runAt,
     seed: "deterministic — no sampling",
     sources: [
-      "User financial profile (demo Maya Restrepo)",
+      "The financial profile currently shown above",
       "Live POST /simulate response",
       "Fed SHED 2025 — unexpected expense prevalence (shock library labels)",
     ],
@@ -51,7 +44,6 @@ export function AssumptionsPanel() {
         <div className="grid gap-x-8 gap-y-1.5 sm:grid-cols-2">
           <Row label="Formula version" value={receipt.formulaVersion} />
           <Row label="Schema version" value={`v${receipt.schemaVersion}`} />
-          <Row label="Run at" value={receipt.runAt} />
           <Row label="Seed" value={receipt.seed} />
           <Row
             label="Live score"

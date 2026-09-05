@@ -17,8 +17,9 @@ case — it's the default.
 """
 
 import re
+from collections.abc import Iterable
 from dataclasses import dataclass, field
-from typing import Iterable, Literal
+from typing import Literal
 
 from app.routes.simulate import SimulateResponse
 

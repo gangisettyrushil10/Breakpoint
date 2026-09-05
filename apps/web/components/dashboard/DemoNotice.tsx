@@ -24,13 +24,12 @@ export function DemoNotice() {
   if (!hydrated || hasOwnProfile) return null;
 
   return (
-    <div className="border-b border-accent/30 bg-accent-dim">
+    <div className="demo-band border-b border-accent/40 bg-accent-dim">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-8 gap-y-3 px-5 py-3.5 sm:px-8">
         <p className="max-w-[62ch] text-[14px] leading-relaxed text-ink-2">
           <span className="font-medium text-ink">This is an example.</span> Every
-          number below belongs to {person.name}, someone we made up — none of it
-          is yours. You can just describe your situation in your own words, and
-          the whole page is worked out again.
+          number below belongs to {person.name}, a fictional renter. Use the demo
+          stack, change the shocks, or replace the profile with your own numbers.
         </p>
 
         {/* Two ways in, both visible. The form is faster if you know your

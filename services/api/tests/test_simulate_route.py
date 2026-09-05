@@ -68,6 +68,25 @@ def test_simulate_with_no_scenarios_returns_full_shape() -> None:
     assert len(data["simulation"]["months"]) == 3
     assert "score" in data["resilience"]
     assert "triggered" in data["breakingPoint"]
+    assert data["breakingPoint"]["triggered"] is False
+
+
+def test_breaking_point_discovery_is_explicit() -> None:
+    body = {
+        "profile": valid_profile_payload(),
+        "months": 12,
+        "scenarios": [],
+        "discoverBreakingPoint": True,
+    }
+
+    response = client.post("/simulate", json=body)
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["simulation"]["months"][0]["state"]["cashCents"] > 0
+    assert data["breakingPoint"]["shockCombination"] != [] or not data[
+        "breakingPoint"
+    ]["triggered"]
 
 
 def test_simulate_with_typed_scenario_applies_it() -> None:
@@ -91,7 +110,14 @@ def test_simulate_applies_custom_scenario_amount_not_the_old_default() -> None:
     body = {
         "profile": valid_profile_payload(),
         "months": 2,
-        "scenarios": [{"type": "rent_hike", "startMonth": 0, "durationMonths": 2, "increaseCents": 100_000}],
+        "scenarios": [
+            {
+                "type": "rent_hike",
+                "startMonth": 0,
+                "durationMonths": 2,
+                "increaseCents": 100_000,
+            }
+        ],
     }
 
     response = client.post("/simulate", json=body)

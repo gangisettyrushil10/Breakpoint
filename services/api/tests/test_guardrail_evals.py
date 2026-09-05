@@ -18,13 +18,12 @@ import asyncio
 from dataclasses import dataclass
 
 import pytest
+from test_agent_loop import ScriptedModel, call_tool, say, user
+from test_agent_tools import maya_profile
 
 from app.agent.loop import AgentLoop
 from app.agent.provider import OpenAIModelClient
 from app.agent.tools.simulate import run_simulate
-
-from test_agent_loop import ScriptedModel, call_tool, say, user
-from test_agent_tools import maya_profile
 
 BASELINE = run_simulate(maya_profile(), months=6)
 SCORE = BASELINE.resilience.score

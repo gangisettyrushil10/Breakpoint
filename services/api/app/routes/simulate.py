@@ -1,6 +1,5 @@
-from pydantic import BaseModel, Field, model_validator
-
 from fastapi import APIRouter
+from pydantic import BaseModel, Field, model_validator
 
 from app.domain.financial_profile import FinancialProfile
 from app.scenarios.library import SCENARIO_PRESETS, merge_schedules
@@ -23,6 +22,7 @@ class SimulateRequest(BaseModel):
     profile: FinancialProfile
     months: int = Field(default=6, ge=1, le=12)
     scenarios: list[ScenarioInput] = Field(default_factory=list)
+    discoverBreakingPoint: bool = False
 
     @model_validator(mode="after")
     def scenarios_must_fit_within_months(self) -> "SimulateRequest":
@@ -67,9 +67,11 @@ def simulate(request: SimulateRequest) -> SimulateResponse:
     )
     simulation = run_months(profile, start, months, combined_schedule)
 
-    breaking_point_candidates = named_schedules or [
-        (name, preset(months)) for name, preset in SCENARIO_PRESETS.items()
-    ]
+    breaking_point_candidates = named_schedules
+    if request.discoverBreakingPoint and not named_schedules:
+        breaking_point_candidates = [
+            (name, preset(months)) for name, preset in SCENARIO_PRESETS.items()
+        ]
     breaking_point = find_breaking_point(profile, months, breaking_point_candidates)
     prevention_plan = build_prevention_plan(profile, breaking_point)
 

@@ -13,15 +13,14 @@ from collections.abc import Iterator
 
 import pytest
 from fastapi.testclient import TestClient
+from test_agent_loop import ExplodingModel, ScriptedModel, call_tool, say
+from test_agent_tools import maya_profile, maya_profile_payload
 
 from app.agent.loop import AgentLoop
 from app.agent.provider import OpenAIModelClient
 from app.agent.tools.simulate import run_simulate
 from app.main import app
 from app.routes.agent import UPSTREAM_FAILURE, get_agent_loop
-
-from test_agent_loop import ExplodingModel, ScriptedModel, call_tool, say
-from test_agent_tools import maya_profile, maya_profile_payload
 
 client = TestClient(app)
 

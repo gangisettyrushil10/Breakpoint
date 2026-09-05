@@ -7,8 +7,7 @@ Deterministic financial stress-test service (FastAPI + Python).
 ```bash
 cd services/api
 python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
+./.venv/bin/pip install -r requirements.txt
 ```
 
 The chat agent needs an OpenAI API key:
@@ -21,14 +20,13 @@ Without it, `/health` and `/simulate` work normally and `/agent/chat` returns a
 502 explaining what's missing. That degradation is deliberate: the deterministic
 product shouldn't break because the AI feature isn't configured.
 
-Default model is `gpt-5.6-luna` (~$1.80 per 1,000 chats). The model never
-computes a number, so it doesn't need to be a strong one — override with
-`OPENAI_MODEL` if you want to compare.
+Default model is `gpt-5.6-luna`. The model never computes financial figures;
+override `OPENAI_MODEL` if your account uses a different compatible model.
 
 ## Run
 
 ```bash
-uvicorn app.main:app --reload --port 8000
+./.venv/bin/python -m uvicorn app.main:app --reload --port 8000
 ```
 
 Health check: [http://localhost:8000/health](http://localhost:8000/health)
@@ -36,7 +34,8 @@ Health check: [http://localhost:8000/health](http://localhost:8000/health)
 ## Test
 
 ```bash
-pytest
+./.venv/bin/python -m pytest
+./.venv/bin/python -m ruff check app tests
 ```
 
 ## Endpoints
@@ -46,6 +45,16 @@ pytest
 | `GET /health` | Liveness check. |
 | `POST /simulate` | The deterministic engine. No LLM anywhere in this path. |
 | `POST /agent/chat` | Chat agent. Routes to the same engine and explains the result. |
+| `POST /agent/chat/stream` | Same chat contract, delivered as server-sent events. |
+
+## Deployment configuration
+
+Local frontend origins on ports 3000 and 3001 are allowed by default. For a
+deployed frontend, add its origin to `.env`:
+
+```bash
+CORS_ALLOW_ORIGINS=https://your-frontend.example.com
+```
 
 ## The agent
 
@@ -62,9 +71,13 @@ app/agent/
   ratelimit.py    per-IP token bucket for /agent/chat
   schemas.py      the /agent/chat wire contract
   tools/
-    simulate.py       wraps the same pipeline as POST /simulate
-    patch_profile.py  merges partial profile edits
-    registry.py       name -> handler, plus the schemas the model sees
+    simulate.py         wraps the same pipeline as POST /simulate
+    explain_score.py    returns weighted score components
+    plan_resilience.py  finds minimum changes for a target score
+    what_if.py          prices permanent changes without saving
+    commute_cost.py     turns a cited fuel price into a monthly estimate
+    patch_profile.py    merges confirmed partial profile edits
+    registry.py         name -> handler, plus the schemas the model sees
 ```
 
 Two invariants hold this together, and both are tested:

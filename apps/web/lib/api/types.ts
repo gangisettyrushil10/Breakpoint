@@ -49,6 +49,7 @@ export interface SimulateRequest {
   profile: FinancialProfile;
   months: number;
   scenarios: ScenarioInput[];
+  discoverBreakingPoint?: boolean;
 }
 
 export interface BaselineResult {

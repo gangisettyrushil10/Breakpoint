@@ -12,6 +12,17 @@ The rest of the file defends the property that makes streaming safe at all:
 import asyncio
 
 import pytest
+from test_agent_loop import (
+    ExplodingModel,
+    ScriptedModel,
+    call_tool,
+    preamble_then_call,
+    refuse,
+    say,
+    truncated,
+    user,
+)
+from test_agent_tools import maya_profile
 
 from app.agent.events import (
     NoticeEvent,
@@ -24,18 +35,6 @@ from app.agent.events import (
 )
 from app.agent.loop import AgentError, AgentLoop, AgentRunResult
 from app.agent.provider import OpenAIModelClient
-
-from test_agent_loop import (
-    ExplodingModel,
-    ScriptedModel,
-    call_tool,
-    preamble_then_call,
-    refuse,
-    say,
-    truncated,
-    user,
-)
-from test_agent_tools import maya_profile
 
 
 def collect(model: ScriptedModel, messages, profile, **kwargs):

@@ -13,6 +13,7 @@ import random
 import string
 
 import pytest
+from test_agent_tools import maya_profile
 
 from app.agent.grounding import Ledger, build_ledger, unsupported_numbers
 from app.agent.guardrails import (
@@ -22,8 +23,6 @@ from app.agent.guardrails import (
     review_sentence,
 )
 from app.agent.tools.simulate import run_simulate
-
-from test_agent_tools import maya_profile
 
 
 def ledger_for(months: int = 6) -> Ledger:

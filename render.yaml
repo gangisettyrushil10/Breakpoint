@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: breakpoint-api
+    runtime: docker
+    dockerfilePath: ./services/api/Dockerfile
+    dockerContext: ./services/api
+    healthCheckPath: /health
+    autoDeployTrigger: commit
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        value: gpt-5.6-luna
+      - key: OPENAI_REASONING_EFFORT
+        value: none
+      - key: CORS_ALLOW_ORIGINS
+        sync: false

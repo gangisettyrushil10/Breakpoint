@@ -14,7 +14,7 @@ export default function IntakePage() {
         <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-4 px-5 py-6 sm:px-8">
           <div>
             <div className="flex items-center gap-2.5">
-              <span aria-hidden className="block h-3.5 w-[3px] rounded-full bg-accent" />
+              <span aria-hidden className="brand-mark block h-3.5 w-[3px] rounded-full bg-accent" />
               <span className="text-[13px] font-medium tracking-tight">BreakPoint</span>
             </div>
             <h1 className="mt-2.5 text-[19px] font-semibold tracking-tight">
